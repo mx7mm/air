@@ -11,7 +11,6 @@ BR2_x86_haswell=y
 # Toolchain
 # =============================================================================
 BR2_TOOLCHAIN_BUILDROOT_MUSL=y
-BR2_KERNEL_HEADERS_6_1=y
 
 # =============================================================================
 # System Configuration
@@ -29,7 +28,7 @@ BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_air_PATH)/board/air/rootfs-overlay"
 # =============================================================================
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_CUSTOM_VERSION=y
-BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.1"
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.6"
 BR2_LINUX_KERNEL_USE_DEFCONFIG=y
 BR2_LINUX_KERNEL_DEFCONFIG="x86_64"
 BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_air_PATH)/board/air/linux.config"
