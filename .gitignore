@@ -1,0 +1,10 @@
+# Build output
+buildroot/
+output/
+build/
+*.img
+*.iso
+
+# Editor
+.vscode/
+.DS_Store

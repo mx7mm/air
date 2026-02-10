@@ -1,0 +1,27 @@
+#!/bin/sh
+# Air Init Script
+# This runs as PID 1
+
+# Mount essential filesystems
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+# Set hostname
+hostname air
+
+# Display boot message
+clear
+echo ""
+echo "    ___    _      "
+echo "   /   |  (_)_____"
+echo "  / /| | / / ___/"
+echo " / ___ |/ / /    "
+echo "/_/  |_/_/_/     "
+echo ""
+echo "Air OS - Phase 1"
+echo ""
+
+# For Phase 1: Drop to shell for testing
+# Later: Start compositor here
+exec /bin/sh
