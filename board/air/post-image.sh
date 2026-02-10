@@ -1,7 +1,8 @@
 #!/bin/bash
 # Post-image script for Air OS
-# 1. Prepares EFI boot files
-# 2. Runs genimage to create disk.img
+# 1. Creates GRUB EFI binary
+# 2. Prepares EFI boot files
+# 3. Runs genimage to create disk.img
 
 set -e
 
@@ -23,30 +24,24 @@ echo "HOST_DIR: ${HOST_DIR}"
 # Create EFI boot directory structure
 mkdir -p "${BINARIES_DIR}/EFI/BOOT"
 
-# Find and copy GRUB EFI binary
-GRUB_EFI=""
-for src in \
-    "${BINARIES_DIR}/efi-part/EFI/BOOT/bootx64.efi" \
-    "${HOST_DIR}/lib/grub/x86_64-efi/monolithic/grubx64.efi" \
-    "${HOST_DIR}/lib/grub/x86_64-efi/grub.efi" \
-    "${BINARIES_DIR}/../build/grub2-*/grub-core/grub.efi"
-do
-    if [ -f "$src" ]; then
-        GRUB_EFI="$src"
-        break
-    fi
-done
-
-if [ -n "$GRUB_EFI" ]; then
-    cp "$GRUB_EFI" "${BINARIES_DIR}/EFI/BOOT/bootx64.efi"
-    echo "Copied GRUB EFI from $GRUB_EFI"
-else
-    echo "ERROR: GRUB EFI binary not found!"
-    echo "Searched in:"
-    echo "  ${HOST_DIR}/lib/grub/x86_64-efi/"
-    ls -la "${HOST_DIR}/lib/grub/" 2>/dev/null || echo "  (directory not found)"
+# Check if GRUB modules exist
+GRUB_MODULES_DIR="${HOST_DIR}/lib/grub/x86_64-efi"
+if [ ! -d "$GRUB_MODULES_DIR" ]; then
+    echo "ERROR: GRUB modules not found at $GRUB_MODULES_DIR"
     exit 1
 fi
+
+echo "Creating GRUB EFI binary..."
+
+# Create GRUB EFI binary using grub-mkimage
+"${HOST_DIR}/bin/grub-mkimage" \
+    -O x86_64-efi \
+    -o "${BINARIES_DIR}/EFI/BOOT/bootx64.efi" \
+    -p /EFI/BOOT \
+    -d "${GRUB_MODULES_DIR}" \
+    boot linux ext2 fat part_gpt part_msdos normal efi_gop
+
+echo "GRUB EFI binary created."
 
 # Copy GRUB config
 cp "${BOARD_DIR}/grub.cfg" "${BINARIES_DIR}/EFI/BOOT/grub.cfg"

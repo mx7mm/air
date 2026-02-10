@@ -51,6 +51,7 @@ BR2_TARGET_ROOTFS_EXT2_SIZE="128M"
 # =============================================================================
 BR2_TARGET_GRUB2=y
 BR2_TARGET_GRUB2_X86_64_EFI=y
+BR2_TARGET_GRUB2_INSTALL_TOOLS=y
 
 # =============================================================================
 # Host Tools (for image generation only)
