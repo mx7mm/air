@@ -1,0 +1,5 @@
+config BR2_EXTERNAL_air_PATH
+    string
+    option env="BR2_EXTERNAL_air_PATH"
+
+source "$BR2_EXTERNAL_air_PATH/board/air/Config.in"
