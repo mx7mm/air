@@ -9,7 +9,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
-- Buildroot Config.in files for external tree support
+- MIT License
+- Security policy (SECURITY.md)
+- Contributing guidelines
+- GitHub issue templates (bug, feature request)
+- Pull request template
+- GitHub Actions CI/CD workflow for automated builds
+- Professional documentation for collaborators
 
 ### Changed
 - Removed X11/Xorg/Mesa from Phase 1 (graphics stack deferred to Phase 2)

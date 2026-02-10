@@ -1,0 +1,37 @@
+name: Build & Test
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Air OS
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget cpio python3 unzip rsync bc libncurses5-dev libssl-dev bubblewrap
+
+      - name: Build Air
+        run: ./scripts/build.sh
+        timeout-minutes: 30
+
+      - name: Check Output
+        run: |
+          if [ -f "$HOME/air-build/buildroot/output/images/disk.img" ]; then
+            ls -lh "$HOME/air-build/buildroot/output/images/disk.img"
+          else
+            echo "Build failed - no disk.img generated"
+            exit 1
+          fi
+
+      - name: Upload Artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: air-disk-image
+          path: ~/air-build/buildroot/output/images/disk.img
+          retention-days: 7
