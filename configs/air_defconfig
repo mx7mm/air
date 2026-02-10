@@ -11,6 +11,7 @@ BR2_x86_haswell=y
 # Toolchain
 # =============================================================================
 BR2_TOOLCHAIN_BUILDROOT_MUSL=y
+BR2_KERNEL_HEADERS_AS_KERNEL=y
 
 # =============================================================================
 # System Configuration
