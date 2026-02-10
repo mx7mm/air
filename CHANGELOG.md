@@ -11,6 +11,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 - Buildroot Config.in files for external tree support
 
+### Changed
+- Removed X11/Xorg/Mesa from Phase 1 (graphics stack deferred to Phase 2)
+- Reduced disk image size from 256M to 128M
+- Simplified kernel configuration for faster builds
+- Updated architecture docs to show phased approach
+- Build time optimized from 60min →15-20min
+
 ---
 
 ## [0.0.1] – 2026-02-10

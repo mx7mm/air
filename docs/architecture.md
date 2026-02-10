@@ -6,11 +6,11 @@ How Air is structured, from hardware to user interface.
 
 ```
 ┌─────────────────────────────────────┐
-│           Air Apps                  │  ← What users see
+│     Air Apps (Phase 2+)             │  ← What users will see
 ├─────────────────────────────────────┤
-│        Air Compositor               │  ← Window management, rendering
+│  Air Compositor (Phase 2+)          │  ← Window management
 ├─────────────────────────────────────┤
-│       Wayland + wlroots             │  ← Graphics protocol
+│  Busybox Init + Shell (Phase 1)     │  ← Boot and testing
 ├─────────────────────────────────────┤
 │        musl libc                    │  ← System library
 ├─────────────────────────────────────┤
@@ -19,6 +19,10 @@ How Air is structured, from hardware to user interface.
 │         Hardware                    │  ← Physical device
 └─────────────────────────────────────┘
 ```
+
+**Phase 1 (Current):** Just kernel + shell for testing
+**Phase 2:** Add Wayland + Compositor
+**Phase 3:** Add Apps + Cloud services
 
 ## Components
 
