@@ -32,6 +32,7 @@ BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="6.6"
 BR2_LINUX_KERNEL_USE_DEFCONFIG=y
 BR2_LINUX_KERNEL_DEFCONFIG="x86_64"
 BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(BR2_EXTERNAL_air_PATH)/board/air/linux.config"
+BR2_LINUX_KERNEL_INSTALL_TARGET=y
 
 # =============================================================================
 # Init System
@@ -61,5 +62,5 @@ BR2_PACKAGE_HOST_MTOOLS=y
 # =============================================================================
 # Image Generation
 # =============================================================================
-BR2_ROOTFS_POST_IMAGE_SCRIPT="support/scripts/genimage.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_air_PATH)/board/air/post-image.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="-c $(BR2_EXTERNAL_air_PATH)/board/air/genimage.cfg"
