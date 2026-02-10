@@ -17,6 +17,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - GitHub Actions CI/CD workflow for automated builds
 - Professional documentation for collaborators
 
+### Fixed
+- Downgrade kernel to Linux 6.1 (more stable for compilation)
+
 ### Changed
 - Removed X11/Xorg/Mesa from Phase 1 (graphics stack deferred to Phase 2)
 - Reduced disk image size from 256M to 128M
