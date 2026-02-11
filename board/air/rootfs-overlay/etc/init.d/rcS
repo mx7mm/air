@@ -7,6 +7,16 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 
+# Mount tmpfs for writable directories (read-only root)
+mount -t tmpfs tmpfs /tmp
+mount -t tmpfs tmpfs /run
+mkdir -p /run/lock
+
+# Mount /var as tmpfs and restore directory structure
+mount -t tmpfs tmpfs /var
+mkdir -p /var/log /var/tmp /var/cache /var/lib /var/spool
+ln -s /run/lock /var/lock
+
 # Set hostname
 hostname air
 
