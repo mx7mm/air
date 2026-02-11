@@ -18,7 +18,8 @@ Current sequence:
 6. `immutability-check` (optional smoke check)
 7. `remount-root-ro` (runtime root remount read-only)
 8. `boot-healthcheck` (optional summary check)
-9. `launch-session` (`air-session` -> `air-primary-interface`)
+9. `auto-update` (optional version check + update staging)
+10. `launch-session` (`air-session` -> `air-primary-interface`)
 
 This keeps boot behavior deterministic while still allowing debug/runtime flags.
 

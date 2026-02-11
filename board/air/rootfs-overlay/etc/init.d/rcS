@@ -5,7 +5,7 @@ if [ -x /usr/bin/air-runtime-flags ]; then
 fi
 
 SERVICE_ORDER_FILE="${AIR_SERVICE_ORDER_FILE:-/etc/air/service-order.conf}"
-DEFAULT_SERVICE_ORDER="mount-core mount-runtime setup-logging mount-data system-identity immutability-check remount-root-ro boot-healthcheck launch-session"
+DEFAULT_SERVICE_ORDER="mount-core mount-runtime setup-logging mount-data system-identity immutability-check remount-root-ro boot-healthcheck auto-update launch-session"
 
 AIR_LOG_VOLATILE_DIR="${AIR_LOG_VOLATILE_DIR:-/run/log/air}"
 AIR_LOG_PERSISTENT_DIR=""
@@ -131,6 +131,13 @@ service_boot_healthcheck() {
 	return 0
 }
 
+service_auto_update() {
+	if [ "${AIR_AUTO_UPDATE:-1}" = "1" ] && [ -x /usr/bin/air-auto-update ]; then
+		/usr/bin/air-auto-update run || true
+	fi
+	return 0
+}
+
 service_launch_session() {
 	SESSION_RC=0
 	if [ -x /usr/bin/air-session ]; then
@@ -165,6 +172,7 @@ run_step() {
 		immutability-check) service_immutability_check ;;
 		remount-root-ro) service_remount_root_ro ;;
 		boot-healthcheck) service_boot_healthcheck ;;
+		auto-update) service_auto_update ;;
 		launch-session) service_launch_session ;;
 		*)
 			log_boot "unknown startup step '$step'"

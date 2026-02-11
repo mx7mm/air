@@ -49,6 +49,7 @@ Source file in this repo:
 - [Architecture](docs/architecture.md) – How the system is structured
 - [Base Services](docs/base-services.md) – Startup order, logging, healthcheck
 - [Update Format](docs/update-package-format.md) – Local package format (`air-update-1`)
+- [Auto Update](docs/auto-update.md) – Central publish + automatic device staging
 - [Glossary](docs/glossary.md) – Technical terms explained
 
 ## Project Status

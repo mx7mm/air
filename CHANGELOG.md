@@ -34,6 +34,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Local update command (`air-update`) with `check/apply/status`
 - Host update package builder (`scripts/make-update-package.sh`)
 - Local update package format documentation (`docs/update-package-format.md`)
+- Boot-time auto update command (`air-auto-update`) with version check + auto staging
+- Channel publish helper (`scripts/publish-update-channel.sh`)
+- Auto-update flow documentation (`docs/auto-update.md`)
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)

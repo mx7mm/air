@@ -59,3 +59,18 @@ Then validate:
 ```bash
 air-update check ./air-update-v0.4.0.tar
 ```
+
+## Channel Manifest (`air-channel-1`)
+
+Automatic device updates use a separate channel manifest (for example `latest.json`):
+
+```json
+{
+  "format_version": "air-channel-1",
+  "package_version": "v0.4.0",
+  "package_url": "file:///data/updates/channel/packages/air-update-v0.4.0.tar",
+  "package_sha256": "<sha256>"
+}
+```
+
+`air-auto-update` reads this manifest, compares versions, downloads the package, and stages it via `air-update`.
