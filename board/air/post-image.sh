@@ -28,6 +28,11 @@ echo "HOST_DIR: ${HOST_DIR}"
 # Create EFI boot directory structure
 mkdir -p "${BINARIES_DIR}/EFI/BOOT"
 
+# Ensure UEFI shell can auto-boot if it drops to shell
+cat > "${BINARIES_DIR}/startup.nsh" <<'EOF'
+\EFI\BOOT\bootx64.efi
+EOF
+
 # Check if GRUB tools and modules exist
 GRUB_MKIMAGE="${HOST_DIR}/bin/grub-mkimage"
 if [ ! -x "$GRUB_MKIMAGE" ]; then
