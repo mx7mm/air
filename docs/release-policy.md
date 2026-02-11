@@ -55,6 +55,11 @@ It will:
 - create/update version release
 - update channel manifest (`air-channel/latest.json`)
 
+## Bootable image releases
+
+Tags (`vX.Y.Z`) trigger `.github/workflows/release-image-on-tag.yml`, which builds
+the ARM64 bootable `.img` and uploads it as a release asset. Use this for fresh
+installs; normal updates should go via update packages (`scripts/release-current-to-github.sh`).
 ## Notes quality
 
 Release notes should include:

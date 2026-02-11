@@ -51,6 +51,7 @@ Source file in this repo:
 - [Update Format](docs/update-package-format.md) – Local package format (`air-update-1`)
 - [Auto Update](docs/auto-update.md) – Central publish + automatic device staging
 - [Release Policy](docs/release-policy.md) – When and how releases are created
+- [Partition Layout](docs/partition-layout.md) – Boot/root/data GPT layout
 - [File Versioning](docs/file-versioning.md) – Per-file version tags and bump rules
 - [Journal 2026-02-11](docs/journal/2026-02-11.md) – Detailed feature log for today
 - [Glossary](docs/glossary.md) – Technical terms explained
