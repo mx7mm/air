@@ -18,6 +18,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - CI enforcement script for file version bumps (`.github/scripts/check-file-versions.sh`)
 - Automatic release workflow on version changes (`.github/workflows/release-on-version-change.yml`)
 - Tag-based workflow to publish bootable arm64 `.img` assets (`.github/workflows/release-image-on-tag.yml`)
+- Dedicated `Air Recovery` GRUB entries for ARM64 and x86_64 emergency shell boot
 
 ### Fixed
 
@@ -32,6 +33,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Auto update install is now manual by default (`AIR_AUTO_UPDATE=0`)
 - OS interface now supports `update` and `status` commands for on-demand download/apply
 - Repository layout restored to standard root structure (no `sammelordner/` indirection)
+- Boot/partition baseline finalized for next image generation:
+  - EFI partition size set to 128 MiB
+  - rootfs size set to 768 MiB
+  - data partition size set to 512 MiB
+- Default GRUB boot path now removes serial console output and keeps recovery console separate
+- Kernel config fragments now explicitly pin EFI GPT + tmpfs/devtmpfs runtime prerequisites
+- Runtime base image version bumped to `v0.2.0` for finalized boot/kernel/partition baseline
 
 ---
 
@@ -80,7 +88,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Updated architecture docs to show phased approach
 - Build time optimized from 60min →15-20min
 - `air-kiosk` startup output now shows version + latest features only
-- Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.1`)
+- Dummy AI version source is centralized in `/etc/air/VERSION` (set to `v0.1.1` in this release)
 - Init boot flow now mounts `/run` and `/tmp` as tmpfs and mounts `/data` when available
 - Kernel cmdline now boots root with `ro` and init remounts `/` read-only
 - Architecture doc now reflects immutable core, partition model, and update approach

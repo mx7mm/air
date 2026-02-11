@@ -13,7 +13,7 @@ This document defines the reproducible boot matrix for milestone `v0.2.1`.
 
 A boot run is `PASS` only if all are true:
 
-- QEMU reaches `air-ai>` prompt within timeout.
+- QEMU reaches `air>` prompt within timeout.
 - Log does not contain known fatal markers:
   - `Kernel panic`
   - `Failed to boot both default and fallback entries`

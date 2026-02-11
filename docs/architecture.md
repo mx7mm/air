@@ -108,7 +108,24 @@ The generated disk image (`disk.img`) uses GPT with:
 3. `data` (ext4)  
    Persistent writable partition, mounted at `/data`.
 
+Current fixed sizes:
+
+- `boot`: 128 MiB
+- `rootfs`: 768 MiB
+- `data`: 512 MiB
+
+Current fixed PARTUUIDs:
+
+- `rootfs`: `8b4b0b87-2f1b-4ea9-9f50-0fba0d4b5ac0`
+- `data`: `4fd2ec57-5fd8-4a77-8f9e-7ad40f6f9489`
+
 Mount behavior is implemented in `board/air/rootfs-overlay/etc/init.d/rcS`.
+
+## Bootloader Policy (Current)
+
+- Default boot entry is `Air` with hidden menu and silent kernel arguments.
+- A secondary `Air Recovery` GRUB entry is provided for emergency shell boot.
+- Normal path targets direct transition into primary interface (`Willkommen`).
 
 ## Update Mechanism (Current vs Target)
 

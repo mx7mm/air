@@ -89,7 +89,7 @@ cp "${KERNEL_IMAGE_SRC}" "${BINARIES_DIR}/EFI/BOOT/${KERNEL_IMAGE_NAME}"
 # Build an empty ext4 image for /data without requiring genext2fs.
 DATA_IMAGE="${BINARIES_DIR}/data.ext4"
 rm -f "${DATA_IMAGE}"
-dd if=/dev/zero of="${DATA_IMAGE}" bs=1M count=128 status=none
+dd if=/dev/zero of="${DATA_IMAGE}" bs=1M count=512 status=none
 "${HOST_DIR}/sbin/mkfs.ext4" -F -L data "${DATA_IMAGE}" >/dev/null 2>&1 || \
     /sbin/mkfs.ext4 -F -L data "${DATA_IMAGE}" >/dev/null 2>&1 || \
     mkfs.ext4 -F -L data "${DATA_IMAGE}" >/dev/null 2>&1 || \

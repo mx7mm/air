@@ -37,7 +37,7 @@ Version metadata remains in:
 
 Current value:
 
-`v0.1.1`
+`v0.2.0`
 
 Source file in this repo:
 
