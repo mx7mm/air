@@ -14,7 +14,8 @@ mkdir -p /run/lock
 
 # Mount /var as tmpfs and restore directory structure
 mount -t tmpfs tmpfs /var
-mkdir -p /var/log /var/tmp /var/cache /var/lib /var/lock /var/spool
+mkdir -p /var/log /var/tmp /var/cache /var/lib /var/spool
+ln -s /run/lock /var/lock
 
 # Set hostname
 hostname air
