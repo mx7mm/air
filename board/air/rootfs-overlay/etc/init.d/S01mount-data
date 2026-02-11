@@ -13,7 +13,7 @@ for param in $(cat /proc/cmdline); do
 done
 
 if [ -z "$DATA_PART" ]; then
-    echo "WARNING: air.data not found in kernel command line"
+    echo "ERROR: air.data not found in kernel command line, system cannot continue"
     exit 1
 fi
 
@@ -25,10 +25,7 @@ if mount -t ext4 "$DATA_PART" /data; then
     echo "Mounted /data from $DATA_PART"
     
     # Create standard writable directories in /data
-    mkdir -p /data/var
-    mkdir -p /data/home
-    mkdir -p /data/tmp
-    mkdir -p /data/log
+    mkdir -p /data/{var,home,tmp,log}
     
     # Set proper permissions
     chmod 1777 /data/tmp

@@ -8,6 +8,8 @@ mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev
 
 # Mount /data partition early
+# Note: We use a custom init script, not BusyBox's standard rcS that auto-runs S* scripts
+# So we explicitly call S01mount-data here for early /data mounting
 if [ -x /etc/init.d/S01mount-data ]; then
     /etc/init.d/S01mount-data
 fi
