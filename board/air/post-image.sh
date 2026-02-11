@@ -16,6 +16,10 @@ while getopts "c:" opt; do
     esac
 done
 
+if [ -z "$GENIMAGE_CFG" ]; then
+    GENIMAGE_CFG="${BOARD_DIR}/genimage.cfg"
+fi
+
 echo "=== Air Post-Image Script ==="
 echo "BINARIES_DIR: ${BINARIES_DIR}"
 echo "TARGET_DIR: ${TARGET_DIR}"
