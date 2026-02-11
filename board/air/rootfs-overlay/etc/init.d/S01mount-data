@@ -17,9 +17,6 @@ if [ -z "$DATA_PART" ]; then
     exit 1
 fi
 
-# Create /data mount point if it doesn't exist
-mkdir -p /data
-
 # Mount the data partition
 if mount -t ext4 "$DATA_PART" /data; then
     echo "Mounted /data from $DATA_PART"
