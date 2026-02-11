@@ -1,0 +1,40 @@
+#!/bin/sh
+# Mount /data partition
+# This runs early in the boot sequence
+
+# Parse kernel command line to find data partition
+DATA_PART=""
+for param in $(cat /proc/cmdline); do
+    case "$param" in
+        air.data=*)
+            DATA_PART="${param#air.data=}"
+            ;;
+    esac
+done
+
+if [ -z "$DATA_PART" ]; then
+    echo "ERROR: air.data not found in kernel command line, system cannot continue"
+    exit 1
+fi
+
+# Create /data mount point if it doesn't exist
+mkdir -p /data
+
+# Mount the data partition
+if mount -t ext4 "$DATA_PART" /data; then
+    echo "Mounted /data from $DATA_PART"
+    
+    # Create standard writable directories in /data
+    mkdir -p /data/{var,home,tmp,log}
+    
+    # Set proper permissions
+    chmod 1777 /data/tmp
+    chmod 755 /data/var
+    chmod 755 /data/home
+    chmod 755 /data/log
+else
+    echo "ERROR: Failed to mount /data from $DATA_PART"
+    exit 1
+fi
+
+exit 0

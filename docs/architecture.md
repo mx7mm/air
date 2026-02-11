@@ -78,9 +78,18 @@ No login. No shell. Straight to Air.
 ├── etc/            # Configuration
 ├── usr/
 │   └── share/air/  # Air-specific assets
-└── var/
-    └── air/        # Runtime data
+├── var/            # Runtime data (symlinked to /data/var)
+└── data/           # Persistent data partition
+    ├── var/        # Variable data
+    ├── home/       # User home directories
+    ├── tmp/        # Temporary files
+    └── log/        # System logs
 ```
+
+The system is designed with an immutable root filesystem and a separate /data partition for all writable state. This separation ensures:
+- System integrity (rootfs can be read-only in future versions)
+- Clean separation between system and user data
+- Easy system updates without affecting user data
 
 ## Build System
 

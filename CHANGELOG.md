@@ -9,6 +9,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- /data partition for persistent data storage
+- S01mount-data init script to mount /data at boot
+- Writable directories structure in /data (/data/var, /data/home, /data/tmp, /data/log)
 - MIT License
 - Security policy (SECURITY.md)
 - Contributing guidelines
@@ -21,6 +24,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
 
 ### Changed
+- Updated disk image layout to include /data partition (256M)
+- Modified GRUB configuration to pass /data partition UUID to kernel
+- Enhanced shutdown sequence to properly sync and unmount /data
 - Removed X11/Xorg/Mesa from Phase 1 (graphics stack deferred to Phase 2)
 - Reduced disk image size from 256M to 128M
 - Simplified kernel configuration for faster builds

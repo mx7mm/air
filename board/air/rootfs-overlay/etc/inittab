@@ -7,5 +7,6 @@
 # Reboot on Ctrl-Alt-Del
 ::ctrlaltdel:/sbin/reboot
 
-# Shutdown properly
+# Shutdown properly - unmount all including /data
+::shutdown:/bin/sync
 ::shutdown:/bin/umount -a -r
