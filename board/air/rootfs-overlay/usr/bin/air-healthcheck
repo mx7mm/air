@@ -1,0 +1,190 @@
+#!/bin/sh
+
+RUNTIME_FLAGS_BIN="${AIR_RUNTIME_FLAGS_BIN:-/usr/bin/air-runtime-flags}"
+SESSION_BIN="${AIR_SESSION_BIN:-/usr/bin/air-session}"
+
+if [ -x "$RUNTIME_FLAGS_BIN" ]; then
+	. "$RUNTIME_FLAGS_BIN"
+fi
+
+MODE="runtime"
+PASS_COUNT=0
+FAIL_COUNT=0
+MOUNTS_FILE="${MOUNTS_FILE:-/proc/mounts}"
+PROC_ROOT="${PROC_ROOT:-/proc}"
+LOG_TARGET=""
+
+for arg in "$@"; do
+	case "$arg" in
+		--mode=boot) MODE="boot" ;;
+		--mode=runtime) MODE="runtime" ;;
+		--help|-h)
+			echo "usage: air-healthcheck [--mode=boot|--mode=runtime]"
+			exit 0
+			;;
+	esac
+done
+
+if [ "$MODE" = "boot" ]; then
+	LOG_TARGET="${AIR_BOOT_LOG:-}"
+else
+	LOG_TARGET="${AIR_RUNTIME_LOG:-${AIR_BOOT_LOG:-}}"
+fi
+
+emit() {
+	line="$1"
+	echo "$line"
+	if [ -n "$LOG_TARGET" ]; then
+		printf '%s\n' "$line" >> "$LOG_TARGET"
+	fi
+	if [ -n "${AIR_LOG_PERSISTENT_DIR:-}" ] && [ -d "$AIR_LOG_PERSISTENT_DIR" ]; then
+		printf '%s\n' "$line" >> "$AIR_LOG_PERSISTENT_DIR/healthcheck.log"
+	fi
+}
+
+pass() {
+	emit "PASS: $1"
+	PASS_COUNT=$((PASS_COUNT + 1))
+}
+
+fail() {
+	emit "FAIL: $1"
+	FAIL_COUNT=$((FAIL_COUNT + 1))
+}
+
+line_for_mount() {
+	awk -v target="$1" '$2 == target { print; exit }' "$MOUNTS_FILE"
+}
+
+check_mount_option() {
+	opts="$1"
+	option="$2"
+	echo "$opts" | tr ',' '\n' | grep -qx "$option"
+}
+
+check_mounts() {
+	root_line="$(line_for_mount /)"
+	if [ -z "$root_line" ]; then
+		fail "root mount not found"
+	else
+		root_opts="$(echo "$root_line" | awk '{print $4}')"
+		if check_mount_option "$root_opts" ro; then
+			pass "root is read-only"
+		else
+			fail "root is not read-only (opts: $root_opts)"
+		fi
+	fi
+
+	run_line="$(line_for_mount /run)"
+	if [ -z "$run_line" ]; then
+		fail "/run mount not found"
+	else
+		run_type="$(echo "$run_line" | awk '{print $3}')"
+		if [ "$run_type" = "tmpfs" ]; then
+			pass "/run uses tmpfs"
+		else
+			fail "/run is not tmpfs (type: $run_type)"
+		fi
+	fi
+
+	tmp_line="$(line_for_mount /tmp)"
+	if [ -z "$tmp_line" ]; then
+		fail "/tmp mount not found"
+	else
+		tmp_type="$(echo "$tmp_line" | awk '{print $3}')"
+		if [ "$tmp_type" = "tmpfs" ]; then
+			pass "/tmp uses tmpfs"
+		else
+			fail "/tmp is not tmpfs (type: $tmp_type)"
+		fi
+	fi
+
+	data_line="$(line_for_mount /data)"
+	if [ -z "$data_line" ]; then
+		fail "/data mount not found"
+	else
+		data_type="$(echo "$data_line" | awk '{print $3}')"
+		data_opts="$(echo "$data_line" | awk '{print $4}')"
+		if [ "$data_type" = "ext4" ]; then
+			pass "/data uses ext4"
+		else
+			fail "/data is not ext4 (type: $data_type)"
+		fi
+		if check_mount_option "$data_opts" rw; then
+			pass "/data is writable"
+		else
+			fail "/data is not writable (opts: $data_opts)"
+		fi
+	fi
+}
+
+check_runtime_assumptions() {
+	if [ -x "$RUNTIME_FLAGS_BIN" ]; then
+		pass "runtime flag loader exists ($RUNTIME_FLAGS_BIN)"
+	else
+		fail "runtime flag loader missing"
+	fi
+
+	if [ -x "$SESSION_BIN" ]; then
+		pass "air-session exists ($SESSION_BIN)"
+	else
+		fail "air-session missing"
+	fi
+
+	version_file="${AIR_VERSION_FILE:-/etc/air/VERSION}"
+	if [ -r "$version_file" ]; then
+		pass "version file readable ($version_file)"
+	else
+		fail "version file missing ($version_file)"
+	fi
+
+	volatile_log_dir="${AIR_LOG_VOLATILE_DIR:-/run/log/air}"
+	if [ -d "$volatile_log_dir" ] && [ -w "$volatile_log_dir" ]; then
+		pass "volatile log dir writable ($volatile_log_dir)"
+	else
+		fail "volatile log dir unavailable ($volatile_log_dir)"
+	fi
+}
+
+check_boot_processes() {
+	comm_file="$PROC_ROOT/1/comm"
+	if [ ! -r "$comm_file" ]; then
+		fail "cannot read PID 1 command name"
+		return
+	fi
+
+	pid1="$(cat "$comm_file")"
+	case "$pid1" in
+		init|busybox) pass "PID 1 is init-compatible ($pid1)" ;;
+		*) fail "unexpected PID 1 process ($pid1)" ;;
+	esac
+}
+
+check_runtime_processes() {
+	if pidof air-kiosk >/dev/null 2>&1 || pidof air-session >/dev/null 2>&1; then
+		pass "air runtime process is active"
+		return
+	fi
+	if [ "${AIR_DEBUG:-0}" = "1" ] && pidof sh >/dev/null 2>&1; then
+		pass "debug shell active (AIR_DEBUG=1)"
+		return
+	fi
+	fail "no active air runtime process detected"
+}
+
+emit "INFO: air-healthcheck mode=$MODE"
+check_mounts
+check_runtime_assumptions
+if [ "$MODE" = "boot" ]; then
+	check_boot_processes
+else
+	check_runtime_processes
+fi
+
+if [ "$FAIL_COUNT" -eq 0 ]; then
+	emit "RESULT: PASS (mode=$MODE, checks=$PASS_COUNT)"
+	exit 0
+fi
+
+emit "RESULT: FAIL (mode=$MODE, pass=$PASS_COUNT, fail=$FAIL_COUNT)"
+exit 1

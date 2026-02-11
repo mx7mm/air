@@ -21,6 +21,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Direct ARM64 run script: `scripts/run-qemu-arm64.sh`
 - ARM64 kernel image artifact: `Image-arm64`
 - Optional init smoke check: `air-immutable-smoke` (`AIR_IMMUTABILITY_CHECK=1`)
+- Dedicated GPT `/data` partition in `disk.img` and rootfs mountpoint `/data`
+- v0.2 milestone summary page: `docs/milestones/v0.2-immutable-core.md`
+- Boot regression matrix script + documentation (`scripts/boot-regression-matrix.sh`, `docs/testing/boot-matrix.md`)
+- Runtime mount verification script (`air-verify-mounts`) and stabilization checklist
+- Automated `/data` persistence reboot test (`scripts/test-data-persistence.sh`)
+- Central runtime flag config + loader (`/etc/air/runtime.conf`, `air-runtime-flags`)
+- Deterministic init service order config (`/etc/air/service-order.conf`)
+- Boot/runtime healthcheck command (`air-healthcheck`)
+- Base services reference doc (`docs/base-services.md`)
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
@@ -35,6 +44,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `air-kiosk` startup output now shows version + latest features only
 - Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.0`)
 - Init boot flow now mounts `/run` and `/tmp` as tmpfs and mounts `/data` when available
+- Kernel cmdline now boots root with `ro` and init remounts `/` read-only
+- Architecture doc now reflects immutable core, partition model, and update approach
+- Runtime flag behavior is now documented (`docs/runtime-flags.md`)
+- Init now follows explicit step-based startup order with service names
+- Runtime logging paths now use `/run/log/air` (+ optional `/data/log/air` mirror) only
 
 ---
 

@@ -1,14 +1,31 @@
 #!/bin/sh
 # Air session launcher (kiosk-first).
 
+if [ -x /usr/bin/air-runtime-flags ]; then
+	. /usr/bin/air-runtime-flags
+fi
+
+log_runtime() {
+	line="$(date '+%Y-%m-%dT%H:%M:%S%z') [air-session] $*"
+	echo "$line"
+	if [ -n "${AIR_RUNTIME_LOG:-}" ]; then
+		printf '%s\n' "$line" >> "$AIR_RUNTIME_LOG"
+	fi
+	if [ -n "${AIR_LOG_PERSISTENT_DIR:-}" ] && [ -d "$AIR_LOG_PERSISTENT_DIR" ]; then
+		printf '%s\n' "$line" >> "$AIR_LOG_PERSISTENT_DIR/runtime.log"
+	fi
+}
+
 if [ -x /usr/bin/air-kiosk ]; then
+	log_runtime "launching air-kiosk"
 	exec /usr/bin/air-kiosk
 fi
 
 # Debug shell only if explicitly enabled.
 if [ "${AIR_DEBUG:-0}" = "1" ]; then
+	log_runtime "air-kiosk missing, falling back to debug shell"
 	exec /bin/sh
 fi
 
-echo "air-kiosk not found; idle mode."
+log_runtime "air-kiosk not found; idle mode"
 exit 0

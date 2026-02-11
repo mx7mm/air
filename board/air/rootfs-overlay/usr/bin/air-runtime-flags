@@ -1,0 +1,77 @@
+#!/bin/sh
+
+CONFIG_FILE="${AIR_RUNTIME_CONFIG:-/etc/air/runtime.conf}"
+
+CFG_AIR_DEBUG=""
+CFG_AIR_REBOOT_ON_EXIT=""
+CFG_AIR_IMMUTABILITY_CHECK=""
+CFG_AIR_IMMUTABILITY_STRICT=""
+CFG_AIR_HEALTHCHECK_ON_BOOT=""
+CFG_AIR_VERSION_FILE=""
+
+is_bool() {
+	[ "$1" = "0" ] || [ "$1" = "1" ]
+}
+
+set_cfg() {
+	key="$1"
+	val="$2"
+	case "$key" in
+		AIR_DEBUG) CFG_AIR_DEBUG="$val" ;;
+		AIR_REBOOT_ON_EXIT) CFG_AIR_REBOOT_ON_EXIT="$val" ;;
+		AIR_IMMUTABILITY_CHECK) CFG_AIR_IMMUTABILITY_CHECK="$val" ;;
+		AIR_IMMUTABILITY_STRICT) CFG_AIR_IMMUTABILITY_STRICT="$val" ;;
+		AIR_HEALTHCHECK_ON_BOOT) CFG_AIR_HEALTHCHECK_ON_BOOT="$val" ;;
+		AIR_VERSION_FILE) CFG_AIR_VERSION_FILE="$val" ;;
+	esac
+}
+
+load_config() {
+	[ -r "$CONFIG_FILE" ] || return 0
+	while IFS= read -r line || [ -n "$line" ]; do
+		case "$line" in
+			""|\#*) continue ;;
+		esac
+		key="${line%%=*}"
+		val="${line#*=}"
+		case "$key" in
+			AIR_DEBUG|AIR_REBOOT_ON_EXIT|AIR_IMMUTABILITY_CHECK|AIR_IMMUTABILITY_STRICT|AIR_HEALTHCHECK_ON_BOOT)
+				is_bool "$val" && set_cfg "$key" "$val"
+				;;
+			AIR_VERSION_FILE)
+				set_cfg "$key" "$val"
+				;;
+		esac
+	done < "$CONFIG_FILE"
+}
+
+choose_bool() {
+	default_val="$1"
+	cfg_val="$2"
+	env_val="$3"
+	if is_bool "$env_val"; then
+		echo "$env_val"
+	elif is_bool "$cfg_val"; then
+		echo "$cfg_val"
+	else
+		echo "$default_val"
+	fi
+}
+
+load_config
+
+AIR_DEBUG="$(choose_bool 0 "$CFG_AIR_DEBUG" "${AIR_DEBUG:-}")"
+AIR_REBOOT_ON_EXIT="$(choose_bool 0 "$CFG_AIR_REBOOT_ON_EXIT" "${AIR_REBOOT_ON_EXIT:-}")"
+AIR_IMMUTABILITY_CHECK="$(choose_bool 0 "$CFG_AIR_IMMUTABILITY_CHECK" "${AIR_IMMUTABILITY_CHECK:-}")"
+AIR_IMMUTABILITY_STRICT="$(choose_bool 0 "$CFG_AIR_IMMUTABILITY_STRICT" "${AIR_IMMUTABILITY_STRICT:-}")"
+AIR_HEALTHCHECK_ON_BOOT="$(choose_bool 1 "$CFG_AIR_HEALTHCHECK_ON_BOOT" "${AIR_HEALTHCHECK_ON_BOOT:-}")"
+
+if [ -n "${AIR_VERSION_FILE:-}" ]; then
+	:
+elif [ -n "$CFG_AIR_VERSION_FILE" ]; then
+	AIR_VERSION_FILE="$CFG_AIR_VERSION_FILE"
+else
+	AIR_VERSION_FILE="/etc/air/VERSION"
+fi
+
+export AIR_DEBUG AIR_REBOOT_ON_EXIT AIR_IMMUTABILITY_CHECK AIR_IMMUTABILITY_STRICT AIR_HEALTHCHECK_ON_BOOT AIR_VERSION_FILE
