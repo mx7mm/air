@@ -1,0 +1,48 @@
+#!/bin/sh
+
+VERSION_FILE="${AIR_VERSION_FILE:-/etc/air/VERSION}"
+
+if [ -z "${AI_VERSION:-}" ]; then
+	if [ -r "$VERSION_FILE" ]; then
+		AI_VERSION="$(head -n 1 "$VERSION_FILE")"
+	else
+		AI_VERSION="v0.1.0"
+	fi
+fi
+
+show_logo() {
+	echo "  ___ ___ ___ "
+	echo " / _ \\_ _| _ \\"
+	echo "|  _/| ||   /"
+	echo "|_| |___|_|_\\"
+}
+
+show_version() {
+	echo "Version: $AI_VERSION"
+}
+
+show_features() {
+	echo "Neueste Features:"
+	echo "- UEFI/GRUB disk image boot"
+	echo "- BusyBox init + air-session launcher"
+	echo "- ARM64 image boot in QEMU"
+	echo "- AIR_DEBUG=1 -> shell fallback"
+	echo "- AIR_REBOOT_ON_EXIT=1 -> force reboot"
+}
+
+show_logo
+show_version
+show_features
+echo "Befehle: features, version, exit"
+
+while :; do
+	printf "air-ai> "
+	IFS= read -r cmd || exit 0
+	case "$cmd" in
+		""|features) show_features ;;
+		version) show_version ;;
+		help) echo "Befehle: features, version, exit" ;;
+		exit|quit) echo "Bye."; exit 0 ;;
+		*) echo "Unbekannt: $cmd" ;;
+	esac
+done

@@ -16,9 +16,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Pull request template
 - GitHub Actions CI/CD workflow for automated builds
 - Professional documentation for collaborators
+- `air-kiosk` dummy AI shell with logo + compact feature view
+- Central dummy AI version file at `/etc/air/VERSION`
+- Direct ARM64 run script: `scripts/run-qemu-arm64.sh`
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
+- ARM64 UEFI/GRUB boot path to load kernel from `EFI/BOOT/Image`
 
 ### Changed
 - Removed X11/Xorg/Mesa from Phase 1 (graphics stack deferred to Phase 2)
@@ -26,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Simplified kernel configuration for faster builds
 - Updated architecture docs to show phased approach
 - Build time optimized from 60min →15-20min
+- `air-kiosk` startup output now shows version + latest features only
 
 ---
 

@@ -10,6 +10,28 @@ Air is built on the Linux kernel but hides all traditional Linux interfaces. Use
 ./scripts/build.sh
 ```
 
+### ARM64 Runtime (Direct QEMU)
+
+Run the built ARM64 disk without UTM:
+
+```bash
+./scripts/run-qemu-arm64.sh
+```
+
+Notes:
+- The script boots with serial console (`-nographic`) for reliable debugging.
+- The script auto-creates a compatible 64MB UEFI vars file when needed.
+
+### Dummy AI Version
+
+The kiosk reads its displayed version from:
+
+`/etc/air/VERSION`
+
+Source file in this repo:
+
+`board/air/rootfs-overlay/etc/air/VERSION`
+
 ## Documentation
 
 - [Vision](docs/vision.md) – What Air will become

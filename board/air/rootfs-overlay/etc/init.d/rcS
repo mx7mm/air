@@ -1,25 +1,32 @@
 #!/bin/sh
-# Air Init Script
-# This runs as PID 1
 
-# Mount essential filesystems
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
-mount -t devtmpfs devtmpfs /dev
+mount_if_needed() {
+	grep -qs " $1 $2 " /proc/mounts || mount -t "$2" "$3" "$1"
+}
 
-# Set hostname
+mount_if_needed /proc proc proc
+mount_if_needed /sys sysfs sysfs
+mount_if_needed /dev devtmpfs devtmpfs
+
 hostname air
 
-# Quiet down console output
-if [ -w /proc/sys/kernel/printk ]; then
-	echo 0 > /proc/sys/kernel/printk
-fi
+[ -w /proc/sys/kernel/printk ] && echo 0 > /proc/sys/kernel/printk
 
-# Start the session; reboot if it exits
+SESSION_RC=0
 if [ -x /usr/bin/air-session ]; then
-	/usr/bin/air-session
+	/usr/bin/air-session || SESSION_RC=$?
 else
 	echo "air-session not found"
+	SESSION_RC=127
 fi
 
-/sbin/reboot -f
+[ "${AIR_DEBUG:-0}" = "1" ] && exec /bin/sh
+
+if [ "${AIR_REBOOT_ON_EXIT:-0}" = "1" ]; then
+	/sbin/reboot -f
+fi
+
+echo "air-session exited with rc=${SESSION_RC}; keeping system alive."
+while :; do
+	sleep 3600
+done
