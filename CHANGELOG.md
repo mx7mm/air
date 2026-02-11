@@ -31,6 +31,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Boot/runtime healthcheck command (`air-healthcheck`)
 - Base services reference doc (`docs/base-services.md`)
 - Minimal primary interface entrypoint (`air-primary-interface`)
+- Local update command (`air-update`) with `check/apply/status`
+- Host update package builder (`scripts/make-update-package.sh`)
+- Local update package format documentation (`docs/update-package-format.md`)
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)

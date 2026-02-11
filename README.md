@@ -48,6 +48,7 @@ Source file in this repo:
 - [Vision](docs/vision.md) – What Air will become
 - [Architecture](docs/architecture.md) – How the system is structured
 - [Base Services](docs/base-services.md) – Startup order, logging, healthcheck
+- [Update Format](docs/update-package-format.md) – Local package format (`air-update-1`)
 - [Glossary](docs/glossary.md) – Technical terms explained
 
 ## Project Status
