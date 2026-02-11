@@ -112,6 +112,13 @@ cp "${GRUB_CFG}" "${BINARIES_DIR}/EFI/BOOT/grub.cfg"
 echo "EFI files prepared in ${BINARIES_DIR}/EFI/BOOT/"
 ls -la "${BINARIES_DIR}/EFI/BOOT/"
 
+# Create empty data partition image
+echo "Creating data partition..."
+DATA_IMG="${BINARIES_DIR}/data-part.ext4"
+dd if=/dev/zero of="${DATA_IMG}" bs=1M count=256
+mkfs.ext4 -F -L "DATA" "${DATA_IMG}"
+echo "Data partition created."
+
 # Run genimage
 GENIMAGE_TMP="${BINARIES_DIR}/../genimage.tmp"
 rm -rf "${GENIMAGE_TMP}"
