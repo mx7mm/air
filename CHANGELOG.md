@@ -9,6 +9,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+
+### Fixed
+
+### Changed
+
+---
+
+## [0.1.1] - 2026-02-11
+
+### Added
 - MIT License
 - Security policy (SECURITY.md)
 - Contributing guidelines
@@ -51,7 +61,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Updated architecture docs to show phased approach
 - Build time optimized from 60min →15-20min
 - `air-kiosk` startup output now shows version + latest features only
-- Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.0`)
+- Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.1`)
 - Init boot flow now mounts `/run` and `/tmp` as tmpfs and mounts `/data` when available
 - Kernel cmdline now boots root with `ro` and init remounts `/` read-only
 - Architecture doc now reflects immutable core, partition model, and update approach
