@@ -36,6 +36,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Local update package format documentation (`docs/update-package-format.md`)
 - Boot-time auto update command (`air-auto-update`) with version check + auto staging
 - Channel publish helper (`scripts/publish-update-channel.sh`)
+- GitHub Releases publish helper (`scripts/publish-update-github.sh`)
 - Auto-update flow documentation (`docs/auto-update.md`)
 
 ### Fixed

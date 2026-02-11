@@ -49,6 +49,31 @@ This generates:
 
 If `latest.json` becomes visible to devices (mounted/synced/served), devices stage the new version automatically on next boot.
 
+## GitHub as Central Update Source
+
+GitHub Releases can be used as the central distribution point.
+
+Publish package + channel manifest:
+
+```bash
+scripts/publish-update-github.sh --repo mx7mm/air --package ./air-update-v0.4.1.tar
+```
+
+This uploads:
+
+- versioned package asset to release tag `v0.4.1` (or provided `--version-tag`)
+- mutable channel manifest asset (`latest.json`) to release tag `air-channel`
+
+Resulting channel URL pattern:
+
+`https://github.com/<owner>/<repo>/releases/download/air-channel/latest.json`
+
+Set this URL on devices:
+
+`AIR_UPDATE_MANIFEST_URL=https://github.com/<owner>/<repo>/releases/download/air-channel/latest.json`
+
+Note for private repos: device access requires authenticated download support (token/cookie/proxy).
+
 ## Scope Note
 
 Current stage is automated download + validate + staging. Full slot switch / rollback execution path is handled in later v0.4 issues.

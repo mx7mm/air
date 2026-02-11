@@ -52,6 +52,8 @@ Source file in this repo:
 - [Auto Update](docs/auto-update.md) – Central publish + automatic device staging
 - [Glossary](docs/glossary.md) – Technical terms explained
 
+GitHub Releases can be used as the central update source (`latest.json` channel + versioned package assets).
+
 ## Project Status
 
 **Phase 1: Foundation** – Building a minimal bootable system.
