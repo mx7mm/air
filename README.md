@@ -1,27 +1,69 @@
 # Air
 
-A minimal, cloud-based operating system with a custom environment and apps.
+**Air is a cloud-native operating system designed for zero-setup work.**
 
-Air is built on the Linux kernel but hides all traditional Linux interfaces. Users see only Air—a clean, purpose-built experience.
+Air is not a Linux distribution.  
+It is not a desktop environment.  
+It is not a customization playground.
 
-## Quick Start
+Air is built around one idea:
 
-```bash
-./scripts/build.sh
-```
+> Your work should follow you. Not your machine.
 
-## Documentation
+---
 
-- [Vision](docs/vision.md) – What Air will become
-- [Architecture](docs/architecture.md) – How the system is structured
-- [Glossary](docs/glossary.md) – Technical terms explained
+## Why Air Exists
 
-## Project Status
+Modern operating systems are:
 
-**Phase 1: Foundation** – Building a minimal bootable system.
+- Stateful  
+- Drift-prone  
+- Configuration-heavy  
+- Device-centered  
 
-See [CHANGELOG.md](CHANGELOG.md) for progress.
+Air is different.
 
-## License
+Air is:
 
-MIT
+- Immutable at its core  
+- Identity-first  
+- Workspace-driven  
+- Designed to remove setup and maintenance  
+
+You don’t configure Air.  
+You sign in.
+
+---
+
+## Current Status
+
+Air is in active development.
+
+- **v0.1 — First Breath**  
+  Air boots.
+
+- **v0.2 — Immutable Core**  
+  Root becomes read-only.
+
+Air is not feature-complete.  
+It is being built deliberately.
+
+---
+
+## Vision
+
+Air replaces:
+
+- File-first workflows  
+- Device-bound environments  
+- Manual setup cycles  
+
+With:
+
+- Context-driven workspaces  
+- Stateless system architecture  
+- Identity-centered computing  
+
+Air is not trying to be everything.
+
+Air is trying to be clear.
