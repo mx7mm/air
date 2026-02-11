@@ -4,6 +4,9 @@ output/
 build/
 *.img
 *.iso
+bzImage
+vmlinuz*
+zImage
 
 # Editor
 .vscode/
