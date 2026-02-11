@@ -9,10 +9,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- Release policy documentation (`docs/release-policy.md`)
+- Release notes extractor script (`scripts/extract-release-notes.sh`)
 
 ### Fixed
 
 ### Changed
+- Release publish scripts now attach version-specific notes from `CHANGELOG.md` by default
+- CONTRIBUTING now requires a versioned release for larger user-visible changes
 
 ---
 

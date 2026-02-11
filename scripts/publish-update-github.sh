@@ -8,6 +8,8 @@ Usage:
     --repo <owner/repo> \
     --package <air-update-<version>.tar> \
     [--version-tag <tag>] \
+    [--release-title <title>] \
+    [--release-notes-file <path>] \
     [--channel-tag <tag>] \
     [--channel-asset <filename>] \
     [--dry-run]
@@ -22,6 +24,8 @@ EOF
 REPO=""
 PACKAGE_PATH=""
 VERSION_TAG=""
+RELEASE_TITLE=""
+RELEASE_NOTES_FILE=""
 CHANNEL_TAG="air-channel"
 CHANNEL_ASSET="latest.json"
 DRY_RUN=0
@@ -38,6 +42,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --version-tag)
       VERSION_TAG="${2:-}"
+      shift 2
+      ;;
+    --release-title)
+      RELEASE_TITLE="${2:-}"
+      shift 2
+      ;;
+    --release-notes-file)
+      RELEASE_NOTES_FILE="${2:-}"
       shift 2
       ;;
     --channel-tag)
@@ -67,6 +79,10 @@ done
 [[ -n "$REPO" ]] || { echo "missing --repo" >&2; exit 1; }
 [[ -n "$PACKAGE_PATH" ]] || { echo "missing --package" >&2; exit 1; }
 [[ -f "$PACKAGE_PATH" ]] || { echo "package not found: $PACKAGE_PATH" >&2; exit 1; }
+if [[ -n "$RELEASE_NOTES_FILE" && ! -f "$RELEASE_NOTES_FILE" ]]; then
+  echo "release notes file not found: $RELEASE_NOTES_FILE" >&2
+  exit 1
+fi
 
 command -v tar >/dev/null 2>&1 || { echo "tar not found" >&2; exit 1; }
 command -v sha256sum >/dev/null 2>&1 || { echo "sha256sum not found" >&2; exit 1; }
@@ -84,6 +100,10 @@ package_version="$(sed -n 's/.*"package_version"[[:space:]]*:[[:space:]]*"\([^"]
 
 if [[ -z "$VERSION_TAG" ]]; then
   VERSION_TAG="$package_version"
+fi
+
+if [[ -z "$RELEASE_TITLE" ]]; then
+  RELEASE_TITLE="Air ${package_version}"
 fi
 
 asset_name="air-update-${package_version}.tar"
@@ -106,6 +126,7 @@ ensure_release() {
   local tag="$1"
   local title="$2"
   local notes="$3"
+  local notes_file="$4"
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "[dry-run] ensure release tag=$tag"
     return 0
@@ -113,7 +134,11 @@ ensure_release() {
   if gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
     return 0
   fi
-  gh release create "$tag" --repo "$REPO" --title "$title" --notes "$notes"
+  if [[ -n "$notes_file" ]]; then
+    gh release create "$tag" --repo "$REPO" --title "$title" --notes-file "$notes_file"
+  else
+    gh release create "$tag" --repo "$REPO" --title "$title" --notes "$notes"
+  fi
 }
 
 upload_asset() {
@@ -127,10 +152,10 @@ upload_asset() {
   gh release upload "$tag" --repo "$REPO" "$file#$label" --clobber
 }
 
-ensure_release "$VERSION_TAG" "Air ${package_version}" "Automated update package release."
+ensure_release "$VERSION_TAG" "$RELEASE_TITLE" "Automated update package release." "$RELEASE_NOTES_FILE"
 upload_asset "$VERSION_TAG" "$asset_path" "$asset_name"
 
-ensure_release "$CHANNEL_TAG" "Air Update Channel" "Mutable channel manifest used by devices."
+ensure_release "$CHANNEL_TAG" "Air Update Channel" "Mutable channel manifest used by devices." ""
 upload_asset "$CHANNEL_TAG" "$latest_json" "$CHANNEL_ASSET"
 
 channel_url="https://github.com/${REPO}/releases/download/${CHANNEL_TAG}/${CHANNEL_ASSET}"

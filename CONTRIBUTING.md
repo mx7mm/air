@@ -37,6 +37,15 @@ Open an issue with the feature template:
 - Update documentation as you go
 - Test your changes (build succeeds)
 - Keep commits clean and meaningful
+- Update `CHANGELOG.md` in every change set
+
+### Release/Milestone Policy
+
+- Every change must include a `CHANGELOG.md` update (enforced in CI).
+- Every larger, user-visible change must be released with a new version tag and GitHub Release.
+- Use `scripts/release-current-to-github.sh --repo mx7mm/air --version vX.Y.Z` after updating version + changelog.
+- When a milestone is closed, create/update a matching wiki page and keep it maintained.
+- Use `docs/milestones/WIKI_TEMPLATE.md` as the canonical structure.
 
 ### 4. Improve Documentation
 - Fix typos, clarify explanations

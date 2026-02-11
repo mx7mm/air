@@ -50,6 +50,7 @@ Source file in this repo:
 - [Base Services](docs/base-services.md) – Startup order, logging, healthcheck
 - [Update Format](docs/update-package-format.md) – Local package format (`air-update-1`)
 - [Auto Update](docs/auto-update.md) – Central publish + automatic device staging
+- [Release Policy](docs/release-policy.md) – When and how releases are created
 - [Glossary](docs/glossary.md) – Technical terms explained
 
 GitHub Releases can be used as the central update source (`latest.json` channel + versioned package assets).

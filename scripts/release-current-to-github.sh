@@ -12,6 +12,8 @@ Options:
   --next-patch              Bump patch from board version (vA.B.C -> vA.B.(C+1))
   --payload-dir <dir>       Payload directory (default: board/air/rootfs-overlay/etc/air)
   --work-dir <dir>          Temp/output work dir (default: /tmp/air-release-current)
+  --release-title <title>   Release title override
+  --notes-file <path>       Release notes Markdown file (default: extracted from CHANGELOG.md)
   --dry-run                 Do not upload, print actions only
   -h, --help                Show help
 
@@ -27,6 +29,8 @@ VERSION=""
 NEXT_PATCH=0
 PAYLOAD_DIR="board/air/rootfs-overlay/etc/air"
 WORK_DIR="/tmp/air-release-current"
+RELEASE_TITLE=""
+NOTES_FILE=""
 DRY_RUN=0
 VERSION_FILE="board/air/rootfs-overlay/etc/air/VERSION"
 
@@ -52,6 +56,14 @@ while [[ $# -gt 0 ]]; do
       WORK_DIR="${2:-}"
       shift 2
       ;;
+    --release-title)
+      RELEASE_TITLE="${2:-}"
+      shift 2
+      ;;
+    --notes-file)
+      NOTES_FILE="${2:-}"
+      shift 2
+      ;;
     --dry-run)
       DRY_RUN=1
       shift 1
@@ -71,6 +83,10 @@ done
 [[ -n "$REPO" ]] || { echo "missing --repo" >&2; exit 1; }
 [[ -d "$PAYLOAD_DIR" ]] || { echo "payload dir not found: $PAYLOAD_DIR" >&2; exit 1; }
 [[ -f "$VERSION_FILE" ]] || { echo "version file not found: $VERSION_FILE" >&2; exit 1; }
+if [[ -n "$NOTES_FILE" && ! -f "$NOTES_FILE" ]]; then
+  echo "notes file not found: $NOTES_FILE" >&2
+  exit 1
+fi
 
 base_version="$(head -n 1 "$VERSION_FILE" | tr -d '\r\n')"
 
@@ -98,6 +114,7 @@ fi
 
 mkdir -p "$WORK_DIR"
 package_path="$WORK_DIR/air-update-${VERSION}.tar"
+auto_notes_path="$WORK_DIR/release-notes-${VERSION}.md"
 
 echo "Preparing release:"
 echo "  repo=$REPO"
@@ -110,10 +127,21 @@ scripts/make-update-package.sh \
   --payload-dir "$PAYLOAD_DIR" \
   --output "$package_path"
 
+if [[ -z "$NOTES_FILE" ]]; then
+  scripts/extract-release-notes.sh --version "$VERSION" > "$auto_notes_path"
+  NOTES_FILE="$auto_notes_path"
+fi
+
+if [[ -z "$RELEASE_TITLE" ]]; then
+  RELEASE_TITLE="Air ${VERSION}"
+fi
+
 publish_args=(
   --repo "$REPO"
   --package "$package_path"
   --version-tag "$VERSION"
+  --release-title "$RELEASE_TITLE"
+  --release-notes-file "$NOTES_FILE"
   --channel-tag "air-channel"
   --channel-asset "latest.json"
 )
