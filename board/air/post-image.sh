@@ -31,16 +31,31 @@ if [ ! -x "$GRUB_MKIMAGE" ]; then
     exit 1
 fi
 
+OUTPUT_DIR="$(dirname "$BINARIES_DIR")"
 GRUB_MODULES_DIR_HOST="${HOST_DIR}/lib/grub/x86_64-efi"
 GRUB_MODULES_DIR_TARGET="${TARGET_DIR}/usr/lib/grub/x86_64-efi"
+GRUB_MODULES_DIR_BUILD=""
+for candidate in \
+    "$OUTPUT_DIR"/build/grub2-*/build-x86_64-efi/grub-core \
+    "$OUTPUT_DIR"/build/grub2-*/grub-core; do
+    if [ -d "$candidate" ]; then
+        GRUB_MODULES_DIR_BUILD="$candidate"
+        break
+    fi
+done
+
 if [ -d "$GRUB_MODULES_DIR_HOST" ]; then
     GRUB_MODULES_DIR="$GRUB_MODULES_DIR_HOST"
 elif [ -d "$GRUB_MODULES_DIR_TARGET" ]; then
     GRUB_MODULES_DIR="$GRUB_MODULES_DIR_TARGET"
+elif [ -n "$GRUB_MODULES_DIR_BUILD" ]; then
+    GRUB_MODULES_DIR="$GRUB_MODULES_DIR_BUILD"
 else
     echo "ERROR: GRUB modules not found in host or target"
     echo "Tried: $GRUB_MODULES_DIR_HOST"
     echo "Tried: $GRUB_MODULES_DIR_TARGET"
+    echo "Tried: $OUTPUT_DIR/build/grub2-*/build-x86_64-efi/grub-core"
+    echo "Tried: $OUTPUT_DIR/build/grub2-*/grub-core"
     exit 1
 fi
 
