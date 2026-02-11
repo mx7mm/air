@@ -4,9 +4,6 @@
 # Run init script at boot
 ::sysinit:/etc/init.d/rcS
 
-# Start shell on console
-tty1::respawn:/bin/sh
-
 # Reboot on Ctrl-Alt-Del
 ::ctrlaltdel:/sbin/reboot
 

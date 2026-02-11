@@ -1,0 +1,14 @@
+#!/bin/sh
+# Air session launcher (kiosk-first).
+
+if [ -x /usr/bin/air-kiosk ]; then
+    exec /usr/bin/air-kiosk
+fi
+
+# Debug shell only if explicitly enabled.
+if [ "${AIR_DEBUG}" = "1" ]; then
+    exec /bin/sh
+fi
+
+sleep 1
+exit 1

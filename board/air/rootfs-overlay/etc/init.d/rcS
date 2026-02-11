@@ -10,18 +10,16 @@ mount -t devtmpfs devtmpfs /dev
 # Set hostname
 hostname air
 
-# Display boot message
-clear
-echo ""
-echo "    ___    _      "
-echo "   /   |  (_)_____"
-echo "  / /| | / / ___/"
-echo " / ___ |/ / /    "
-echo "/_/  |_/_/_/     "
-echo ""
-echo "Air OS - Phase 1"
-echo ""
+# Quiet down console output
+if [ -w /proc/sys/kernel/printk ]; then
+	echo 0 > /proc/sys/kernel/printk
+fi
 
-# For Phase 1: Drop to shell for testing
-# Later: Start compositor here
-exec /bin/sh
+# Start the session; reboot if it exits
+if [ -x /usr/bin/air-session ]; then
+	/usr/bin/air-session
+else
+	echo "air-session not found"
+fi
+
+/sbin/reboot -f
