@@ -10,6 +10,9 @@ Air is built on the Linux kernel but hides all traditional Linux interfaces. Use
 ./scripts/build.sh
 ```
 
+Note:
+- The build script runs on Linux hosts. On macOS, build via Linux VM/SSH host.
+
 ### ARM64 Runtime (Direct QEMU)
 
 Run the built ARM64 disk without UTM:
@@ -27,6 +30,10 @@ Notes:
 The kiosk reads its displayed version from:
 
 `/etc/air/VERSION`
+
+Current value:
+
+`v0.1.0`
 
 Source file in this repo:
 

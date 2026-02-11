@@ -19,6 +19,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `air-kiosk` dummy AI shell with logo + compact feature view
 - Central dummy AI version file at `/etc/air/VERSION`
 - Direct ARM64 run script: `scripts/run-qemu-arm64.sh`
+- ARM64 kernel image artifact: `Image-arm64`
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
@@ -31,6 +32,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Updated architecture docs to show phased approach
 - Build time optimized from 60min →15-20min
 - `air-kiosk` startup output now shows version + latest features only
+- Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.0`)
 
 ---
 
