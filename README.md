@@ -10,6 +10,16 @@ Air is built on the Linux kernel but hides all traditional Linux interfaces. Use
 ./scripts/build.sh
 ```
 
+## Build Variants
+
+Air now has two build variants:
+
+- x86_64 (default): `./scripts/build.sh`
+- ARM64 (AArch64): `AIR_DEFCONFIG=air_arm64_defconfig ./scripts/build.sh`
+
+Both variants produce a `disk.img` under the chosen build directory
+(default: `~/air-build`).
+
 ## Documentation
 
 - [Vision](docs/vision.md) – What Air will become
