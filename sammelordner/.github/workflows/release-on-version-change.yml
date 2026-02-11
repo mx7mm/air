@@ -1,0 +1,55 @@
+name: Release on Version Change
+
+on:
+  push:
+    branches:
+      - main
+      - feat/**
+    paths:
+      - board/air/rootfs-overlay/etc/air/VERSION
+      - CHANGELOG.md
+      - scripts/release-current-to-github.sh
+      - scripts/publish-update-github.sh
+      - scripts/make-update-package.sh
+      - scripts/extract-release-notes.sh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION="$(tr -d '\r\n' < board/air/rootfs-overlay/etc/air/VERSION)"
+          if [[ -z "$VERSION" ]]; then
+            echo "VERSION is empty" >&2
+            exit 1
+          fi
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION must be semver with leading v (got: $VERSION)" >&2
+            exit 1
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Verify changelog section exists
+        run: |
+          scripts/extract-release-notes.sh --version "${{ steps.version.outputs.value }}" >/tmp/release-notes.md
+          test -s /tmp/release-notes.md
+
+      - name: Publish release and update package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scripts/release-current-to-github.sh \
+            --repo "${{ github.repository }}" \
+            --version "${{ steps.version.outputs.value }}"

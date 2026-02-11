@@ -1,0 +1,37 @@
+name: Milestone Wiki Follow-up
+
+on:
+  milestone:
+    types: [closed]
+
+jobs:
+  create-wiki-task:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open wiki maintenance issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const milestone = context.payload.milestone;
+            const title = `[Wiki] Milestone ${milestone.title} summary page`;
+            const body = [
+              `Milestone **${milestone.title}** was closed.`,
+              ``,
+              `Please create/update the related wiki page and keep it maintained.`,
+              ``,
+              `Checklist:`,
+              `- [ ] Create/Update wiki page: \`Milestones/${milestone.title}\``,
+              `- [ ] Add scope and delivered items`,
+              `- [ ] Add known gaps and carry-over items`,
+              `- [ ] Add links to merged PRs and closed issues`,
+              `- [ ] Link the wiki page in CHANGELOG/README where relevant`
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['documentation']
+            });

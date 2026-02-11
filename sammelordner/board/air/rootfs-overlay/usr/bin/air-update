@@ -1,0 +1,203 @@
+#!/bin/sh
+set -eu
+
+STAGING_DIR="${AIR_UPDATE_STAGING_DIR:-/data/updates/staged}"
+STATE_DIR="${AIR_UPDATE_STATE_DIR:-/data/updates/state}"
+ACTIVE_DIR="${AIR_UPDATE_ACTIVE_DIR:-/data/updates/current}"
+TMP_BASE="${AIR_UPDATE_TMP_BASE:-/tmp/air-update}"
+
+usage() {
+	echo "usage: air-update check <package.tar>"
+	echo "       air-update apply <package.tar>"
+	echo "       air-update status"
+}
+
+require_file() {
+	path="$1"
+	if [ ! -f "$path" ]; then
+		echo "ERROR: file not found: $path" >&2
+		exit 1
+	fi
+}
+
+require_cmd() {
+	command -v "$1" >/dev/null 2>&1 || {
+		echo "ERROR: required command missing: $1" >&2
+		exit 1
+	}
+}
+
+parse_manifest_field() {
+	field="$1"
+	file="$2"
+	sed -n "s/.*\"$field\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$file" | head -n 1
+}
+
+validate_manifest() {
+	manifest="$1"
+	format_version="$(parse_manifest_field format_version "$manifest")"
+	package_version="$(parse_manifest_field package_version "$manifest")"
+	payload_file="$(parse_manifest_field payload_file "$manifest")"
+	payload_sha256="$(parse_manifest_field payload_sha256 "$manifest")"
+
+	[ -n "$format_version" ] || {
+		echo "ERROR: manifest missing format_version" >&2
+		exit 1
+	}
+	[ "$format_version" = "air-update-1" ] || {
+		echo "ERROR: unsupported format_version: $format_version" >&2
+		exit 1
+	}
+	[ -n "$package_version" ] || {
+		echo "ERROR: manifest missing package_version" >&2
+		exit 1
+	}
+	[ -n "$payload_file" ] || {
+		echo "ERROR: manifest missing payload_file" >&2
+		exit 1
+	}
+	[ -n "$payload_sha256" ] || {
+		echo "ERROR: manifest missing payload_sha256" >&2
+		exit 1
+	}
+}
+
+extract_package() {
+	package="$1"
+	workdir="$2"
+
+	rm -rf "$workdir"
+	mkdir -p "$workdir"
+	tar -xf "$package" -C "$workdir"
+
+	require_file "$workdir/manifest.json"
+	payload_file="$(parse_manifest_field payload_file "$workdir/manifest.json")"
+	[ -n "$payload_file" ] || payload_file="payload.tar"
+	require_file "$workdir/$payload_file"
+}
+
+verify_payload_hash() {
+	workdir="$1"
+	manifest="$workdir/manifest.json"
+	payload_file="$(parse_manifest_field payload_file "$manifest")"
+	expected_hash="$(parse_manifest_field payload_sha256 "$manifest")"
+
+	actual_hash="$(sha256sum "$workdir/$payload_file" | awk '{print $1}')"
+	if [ "$actual_hash" != "$expected_hash" ]; then
+		echo "ERROR: payload hash mismatch" >&2
+		echo "expected: $expected_hash" >&2
+		echo "actual:   $actual_hash" >&2
+		exit 1
+	fi
+
+	if [ -f "$workdir/payload.sha256" ]; then
+		file_hash="$(awk '{print $1}' "$workdir/payload.sha256" | head -n 1)"
+		if [ "$file_hash" != "$actual_hash" ]; then
+			echo "ERROR: payload.sha256 does not match payload" >&2
+			exit 1
+		fi
+	fi
+}
+
+do_check() {
+	package="$1"
+	require_file "$package"
+	require_cmd tar
+	require_cmd sha256sum
+	workdir="${TMP_BASE}.$$"
+	trap 'rm -rf "$workdir"' EXIT INT TERM
+
+	extract_package "$package" "$workdir"
+	validate_manifest "$workdir/manifest.json"
+	verify_payload_hash "$workdir"
+
+	echo "OK: package format valid"
+	echo "format_version=$(parse_manifest_field format_version "$workdir/manifest.json")"
+	echo "package_version=$(parse_manifest_field package_version "$workdir/manifest.json")"
+	echo "payload_file=$(parse_manifest_field payload_file "$workdir/manifest.json")"
+}
+
+do_apply() {
+	package="$1"
+	require_file "$package"
+	require_cmd tar
+	require_cmd sha256sum
+	workdir="${TMP_BASE}.$$"
+	trap 'rm -rf "$workdir"' EXIT INT TERM
+
+	extract_package "$package" "$workdir"
+	validate_manifest "$workdir/manifest.json"
+	verify_payload_hash "$workdir"
+
+	package_version="$(parse_manifest_field package_version "$workdir/manifest.json")"
+	payload_file="$(parse_manifest_field payload_file "$workdir/manifest.json")"
+	target_dir="$STAGING_DIR/$package_version"
+	state_file="$STATE_DIR/last-staged.json"
+	active_tmp="$ACTIVE_DIR.tmp.$$"
+
+	mkdir -p "$target_dir" "$STATE_DIR"
+	cp "$workdir/manifest.json" "$target_dir/manifest.json"
+	cp "$workdir/$payload_file" "$target_dir/$payload_file"
+	if [ -f "$workdir/payload.sha256" ]; then
+		cp "$workdir/payload.sha256" "$target_dir/payload.sha256"
+	fi
+
+	rm -rf "$target_dir/payload"
+	mkdir -p "$target_dir/payload"
+	tar -xf "$target_dir/$payload_file" -C "$target_dir/payload"
+
+	# Activate staged payload atomically for runtime consumers.
+	rm -rf "$active_tmp"
+	mkdir -p "$active_tmp"
+	tar -xf "$target_dir/$payload_file" -C "$active_tmp"
+	rm -rf "$ACTIVE_DIR"
+	mv "$active_tmp" "$ACTIVE_DIR"
+
+	cp "$workdir/manifest.json" "$state_file"
+
+	echo "OK: package staged and activated"
+	echo "version=$package_version"
+	echo "staging_dir=$target_dir"
+	echo "active_dir=$ACTIVE_DIR"
+	echo "state_file=$state_file"
+}
+
+do_status() {
+	state_file="$STATE_DIR/last-staged.json"
+	if [ ! -f "$state_file" ]; then
+		echo "No staged update"
+		return 0
+	fi
+	version="$(parse_manifest_field package_version "$state_file")"
+	echo "Staged update version: ${version:-unknown}"
+	echo "State file: $state_file"
+}
+
+cmd="${1:-}"
+case "$cmd" in
+	check)
+		[ $# -eq 2 ] || {
+			usage
+			exit 1
+		}
+		do_check "$2"
+		;;
+	apply)
+		[ $# -eq 2 ] || {
+			usage
+			exit 1
+		}
+		do_apply "$2"
+		;;
+	status)
+		[ $# -eq 1 ] || {
+			usage
+			exit 1
+		}
+		do_status
+		;;
+	*)
+		usage
+		exit 1
+		;;
+esac

@@ -1,0 +1,51 @@
+#!/bin/sh
+
+MOUNTS_FILE="${MOUNTS_FILE:-/proc/mounts}"
+PASS=1
+
+fail() {
+	echo "FAIL: $1"
+	PASS=0
+}
+
+line_for_mount() {
+	awk -v target="$1" '$2 == target { print; exit }' "$MOUNTS_FILE"
+}
+
+root_line="$(line_for_mount /)"
+if [ -z "$root_line" ]; then
+	fail "root mount not found"
+else
+	root_opts="$(echo "$root_line" | awk '{print $4}')"
+	if echo "$root_opts" | tr ',' '\n' | grep -qx ro; then
+		echo "PASS: root mount is read-only"
+	else
+		fail "root mount is not read-only (opts: $root_opts)"
+	fi
+fi
+
+data_line="$(line_for_mount /data)"
+if [ -z "$data_line" ]; then
+	fail "/data mount not found"
+else
+	data_type="$(echo "$data_line" | awk '{print $3}')"
+	data_opts="$(echo "$data_line" | awk '{print $4}')"
+	if [ "$data_type" != "ext4" ]; then
+		fail "/data fs type is not ext4 (type: $data_type)"
+	else
+		echo "PASS: /data fs type is ext4"
+	fi
+	if echo "$data_opts" | tr ',' '\n' | grep -qx rw; then
+		echo "PASS: /data mount is writable"
+	else
+		fail "/data mount is not writable (opts: $data_opts)"
+	fi
+fi
+
+if [ "$PASS" -eq 1 ]; then
+	echo "RESULT: PASS"
+	exit 0
+fi
+
+echo "RESULT: FAIL"
+exit 1
