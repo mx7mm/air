@@ -6,22 +6,22 @@ How Air is structured, from hardware to user interface.
 
 ```
 ┌─────────────────────────────────────┐
-│     Air Apps (Phase 2+)             │  ← What users will see
+│     Air Apps (Phase 2+)             │  <- What users will see
 ├─────────────────────────────────────┤
-│  Air Compositor (Phase 2+)          │  ← Window management
+│  Air Compositor (Phase 2+)          │  <- Window management
 ├─────────────────────────────────────┤
-│  Busybox Init + Shell (Phase 1)     │  ← Boot and testing
+│  Busybox Init + Kiosk (Phase 1)     │  <- Boot and testing
 ├─────────────────────────────────────┤
-│        musl libc                    │  ← System library
+│        musl libc                    │  <- System library
 ├─────────────────────────────────────┤
-│        Linux Kernel                 │  ← Hardware interface
+│        Linux Kernel                 │  <- Hardware interface
 ├─────────────────────────────────────┤
-│         Hardware                    │  ← Physical device
+│         Hardware                    │  <- Physical device
 └─────────────────────────────────────┘
 ```
 
-**Phase 1 (Current):** Just kernel + shell for testing
-**Phase 2:** Add Wayland + Compositor
+**Phase 1 (Current):** Bootable immutable core + kiosk shell  
+**Phase 2:** Add Wayland + Compositor  
 **Phase 3:** Add Apps + Cloud services
 
 ## Components
@@ -42,16 +42,16 @@ How Air is structured, from hardware to user interface.
 - Replaces legacy X11
 
 ### Air Compositor
-- **Our code** – the first custom component
+- **Our code** - the first custom component
 - Manages windows, input, display
-- Enforces Air's visual rules (no window decorations, no minimize, etc.)
+- Enforces Air visual rules
 
 ### Air Apps
 - Full-screen applications
 - Web-based (Chromium runtime) or native
 - Delivered and updated from the cloud
 
-## Boot Sequence
+## Boot Sequence (Current)
 
 ```
 1. BIOS/UEFI
@@ -62,12 +62,65 @@ How Air is structured, from hardware to user interface.
    ↓
 4. Air Init (PID 1)
    ↓
-5. Air Compositor
+5. Kiosk Session (air-session -> air-kiosk)
    ↓
-6. Air Shell (home screen)
+6. Debug shell only when explicitly enabled
 ```
 
-No login. No shell. Straight to Air.
+No login. Straight to Air. Shell is debug-only fallback.
+
+## Base Services (v0.3)
+
+The init script now uses a deterministic service order from:
+
+`/etc/air/service-order.conf`
+
+This defines explicit boot steps (mounts, logging, identity, checks, session launch) and avoids implicit startup behavior.
+
+Runtime logs are written to:
+
+- `/run/log/air` (volatile)
+- `/data/log/air` (persistent mirror, when available)
+
+See `docs/base-services.md` for full details.
+
+## Immutable Core Model (v0.2)
+
+Air now uses an immutable-first boot model:
+
+- Root filesystem boots with `ro` kernel flag.
+- Init mounts volatile state on tmpfs:
+  - `/run`
+  - `/tmp`
+- Persistent writable state is isolated to `/data`.
+- Optional immutability smoke check verifies root write behavior.
+
+This keeps system binaries and base config immutable while still allowing runtime state and persistence where intended.
+
+## Partition Model (Current)
+
+The generated disk image (`disk.img`) uses GPT with:
+
+1. `boot` (EFI FAT)  
+   UEFI boot files and GRUB configuration.
+2. `rootfs` (ext4)  
+   Main system image, mounted read-only at runtime.
+3. `data` (ext4)  
+   Persistent writable partition, mounted at `/data`.
+
+Mount behavior is implemented in `board/air/rootfs-overlay/etc/init.d/rcS`.
+
+## Update Mechanism (Current vs Target)
+
+Current (v0.2):
+- Buildroot generates a full disk image.
+- Updates are image-based replacement/reflash in current dev workflow.
+- Runtime does not include transactional OTA yet.
+
+Target (future):
+- A/B or equivalent atomic update strategy.
+- Verified image handoff and rollback support.
+- Cloud-orchestrated release channels.
 
 ## Directory Structure (on device)
 
@@ -76,20 +129,13 @@ No login. No shell. Straight to Air.
 ├── bin/            # Core binaries
 ├── lib/            # Libraries (musl, etc.)
 ├── etc/            # Configuration
+├── data/           # Persistent writable state
+├── run/            # Volatile runtime state (tmpfs)
+├── tmp/            # Volatile temp state (tmpfs)
 ├── usr/
 │   └── share/air/  # Air-specific assets
-├── var/            # Runtime data (symlinked to /data/var)
-└── data/           # Persistent data partition
-    ├── var/        # Variable data
-    ├── home/       # User home directories
-    ├── tmp/        # Temporary files
-    └── log/        # System logs
+└── var/            # Runtime-managed paths (minimal in phase 1)
 ```
-
-The system is designed with an immutable root filesystem and a separate /data partition for all writable state. This separation ensures:
-- System integrity (rootfs can be read-only in future versions)
-- Clean separation between system and user data
-- Easy system updates without affecting user data
 
 ## Build System
 

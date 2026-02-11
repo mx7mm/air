@@ -1,0 +1,54 @@
+name: Release Bootable Image
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload-arm64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget cpio python3 unzip rsync bc libncurses5-dev libssl-dev bubblewrap
+
+      - name: Build arm64 image
+        env:
+          AIR_DEFCONFIG: air_arm64_defconfig
+        run: ./scripts/build.sh
+        timeout-minutes: 60
+
+      - name: Prepare release asset
+        id: prep
+        run: |
+          VERSION_TAG="${GITHUB_REF_NAME:-manual}"
+          SRC="$HOME/air-build/buildroot/output/images/disk.img"
+          test -f "$SRC"
+          ASSET="air-${VERSION_TAG}-arm64.img"
+          cp "$SRC" "$ASSET"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-manual}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Air $TAG" --notes "Automated bootable image release."
+          fi
+
+      - name: Upload image asset to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-manual}"
+          gh release upload "$TAG" "${{ steps.prep.outputs.asset }}" --clobber

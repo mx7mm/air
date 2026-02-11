@@ -1,0 +1,27 @@
+name: Policy Checks
+on: [push, pull_request]
+
+jobs:
+  changelog-required:
+    runs-on: ubuntu-latest
+    name: Require CHANGELOG update
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce CHANGELOG policy
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "BASE_SHA=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "BASE_SHA=${{ github.event.before }}" >> "$GITHUB_ENV"
+          fi
+          chmod +x .github/scripts/check-changelog.sh
+          .github/scripts/check-changelog.sh
+
+      - name: Enforce file version policy
+        run: |
+          chmod +x .github/scripts/check-file-versions.sh
+          .github/scripts/check-file-versions.sh

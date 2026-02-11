@@ -1,0 +1,223 @@
+#!/bin/sh
+set -eu
+
+if [ -x /usr/bin/air-runtime-flags ]; then
+	. /usr/bin/air-runtime-flags
+fi
+
+STATE_DIR="${AIR_UPDATE_STATE_DIR:-/data/updates/state}"
+INBOX_DIR="${AIR_UPDATE_INBOX_DIR:-/data/updates/inbox}"
+TMP_BASE="${AIR_AUTO_UPDATE_TMP_BASE:-/tmp/air-auto-update}"
+MANIFEST_REF="${AIR_UPDATE_MANIFEST_URL:-/data/updates/channel/latest.json}"
+VERSION_FILE="${AIR_VERSION_FILE:-/etc/air/VERSION}"
+AIR_UPDATE_BIN="${AIR_UPDATE_BIN:-/usr/bin/air-update}"
+
+usage() {
+	echo "usage: air-auto-update run"
+	echo "       air-auto-update status"
+}
+
+log_line() {
+	line="$(date '+%Y-%m-%dT%H:%M:%S%z') [air-auto-update] $*"
+	echo "$line"
+	if [ -n "${AIR_BOOT_LOG:-}" ]; then
+		printf '%s\n' "$line" >> "$AIR_BOOT_LOG"
+	fi
+	if [ -n "${AIR_RUNTIME_LOG:-}" ]; then
+		printf '%s\n' "$line" >> "$AIR_RUNTIME_LOG"
+	fi
+	if [ -n "${AIR_LOG_PERSISTENT_DIR:-}" ] && [ -d "$AIR_LOG_PERSISTENT_DIR" ]; then
+		printf '%s\n' "$line" >> "$AIR_LOG_PERSISTENT_DIR/runtime.log"
+	fi
+}
+
+parse_manifest_field() {
+	field="$1"
+	file="$2"
+	sed -n "s/.*\"$field\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$file" | head -n 1
+}
+
+to_semver_int() {
+	raw="$1"
+	val="${raw#v}"
+	major="$(echo "$val" | awk -F. '{print $1}')"
+	minor="$(echo "$val" | awk -F. '{print $2}')"
+	patch="$(echo "$val" | awk -F. '{print $3}')"
+	case "$major$minor$patch" in
+		*[!0-9]*|"") return 1 ;;
+	esac
+	printf '%d%03d%03d\n' "$major" "$minor" "$patch"
+}
+
+is_newer_version() {
+	current="$1"
+	target="$2"
+	cur_int="$(to_semver_int "$current" 2>/dev/null || true)"
+	tgt_int="$(to_semver_int "$target" 2>/dev/null || true)"
+	if [ -n "$cur_int" ] && [ -n "$tgt_int" ]; then
+		[ "$tgt_int" -gt "$cur_int" ]
+		return $?
+	fi
+	[ "$current" != "$target" ]
+}
+
+read_current_version() {
+	if [ -r "$VERSION_FILE" ]; then
+		head -n 1 "$VERSION_FILE"
+	else
+		echo "v0.0.0"
+	fi
+}
+
+download_ref() {
+	ref="$1"
+	dst="$2"
+	case "$ref" in
+		http://*|https://*)
+			if command -v wget >/dev/null 2>&1; then
+				wget -q -O "$dst" "$ref"
+				return 0
+			fi
+			if command -v curl >/dev/null 2>&1; then
+				curl -fsSL "$ref" -o "$dst"
+				return 0
+			fi
+			log_line "no downloader available for URL: $ref"
+			return 1
+			;;
+		file://*)
+			cp "${ref#file://}" "$dst"
+			;;
+		/*)
+			cp "$ref" "$dst"
+			;;
+		*)
+			log_line "unsupported ref: $ref"
+			return 1
+			;;
+	esac
+}
+
+write_state() {
+	mkdir -p "$STATE_DIR"
+	state_file="$STATE_DIR/auto-update.json"
+	status="$1"
+	current="$2"
+	target="$3"
+	note="$4"
+	cat > "$state_file" <<EOF
+{
+  "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "status": "$status",
+  "current_version": "$current",
+  "target_version": "$target",
+  "note": "$note"
+}
+EOF
+}
+
+do_run() {
+	if [ "${AIR_AUTO_UPDATE:-1}" != "1" ]; then
+		log_line "auto update disabled"
+		return 0
+	fi
+
+	workdir="${TMP_BASE}.$$"
+	manifest_file="$workdir/latest.json"
+	package_file="$workdir/package.tar"
+	mkdir -p "$workdir" "$INBOX_DIR" "$STATE_DIR"
+	trap 'rm -rf "$workdir"' EXIT INT TERM
+
+	current_version="$(read_current_version)"
+	if ! download_ref "$MANIFEST_REF" "$manifest_file"; then
+		write_state "no_manifest" "$current_version" "" "manifest unavailable"
+		return 0
+	fi
+
+	channel_format="$(parse_manifest_field format_version "$manifest_file")"
+	target_version="$(parse_manifest_field package_version "$manifest_file")"
+	package_url="$(parse_manifest_field package_url "$manifest_file")"
+	package_sha256="$(parse_manifest_field package_sha256 "$manifest_file")"
+
+	if [ "$channel_format" != "air-channel-1" ] || [ -z "$target_version" ] || [ -z "$package_url" ]; then
+		log_line "invalid channel manifest"
+		write_state "invalid_manifest" "$current_version" "$target_version" "missing required fields"
+		return 0
+	fi
+
+	if ! is_newer_version "$current_version" "$target_version"; then
+		log_line "no update required (current=$current_version, target=$target_version)"
+		write_state "up_to_date" "$current_version" "$target_version" "already current"
+		return 0
+	fi
+
+	log_line "new version detected: $current_version -> $target_version"
+	if ! download_ref "$package_url" "$package_file"; then
+		log_line "package download failed"
+		write_state "download_failed" "$current_version" "$target_version" "package download failed"
+		return 0
+	fi
+
+	if [ -n "$package_sha256" ]; then
+		actual_sha="$(sha256sum "$package_file" | awk '{print $1}')"
+		if [ "$actual_sha" != "$package_sha256" ]; then
+			log_line "package sha mismatch"
+			write_state "sha_mismatch" "$current_version" "$target_version" "channel sha mismatch"
+			return 0
+		fi
+	fi
+
+	inbox_pkg="$INBOX_DIR/air-update-${target_version}.tar"
+	cp "$package_file" "$inbox_pkg"
+
+	if ! "$AIR_UPDATE_BIN" check "$inbox_pkg" >/dev/null 2>&1; then
+		log_line "air-update check failed"
+		write_state "check_failed" "$current_version" "$target_version" "air-update check failed"
+		return 0
+	fi
+
+	if ! "$AIR_UPDATE_BIN" apply "$inbox_pkg" >/dev/null 2>&1; then
+		log_line "air-update apply failed"
+		write_state "apply_failed" "$current_version" "$target_version" "air-update apply failed"
+		return 0
+	fi
+
+	log_line "update staged: $target_version"
+	write_state "staged" "$current_version" "$target_version" "staged successfully"
+
+	if [ "${AIR_AUTO_UPDATE_REBOOT:-0}" = "1" ]; then
+		log_line "rebooting after staged update"
+		/sbin/reboot -f
+	fi
+}
+
+do_status() {
+	state_file="$STATE_DIR/auto-update.json"
+	if [ ! -f "$state_file" ]; then
+		echo "No auto-update state"
+		return 0
+	fi
+	cat "$state_file"
+}
+
+cmd="${1:-}"
+case "$cmd" in
+	run)
+		[ $# -eq 1 ] || {
+			usage
+			exit 1
+		}
+		do_run
+		;;
+	status)
+		[ $# -eq 1 ] || {
+			usage
+			exit 1
+		}
+		do_status
+		;;
+	*)
+		usage
+		exit 1
+		;;
+esac

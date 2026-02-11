@@ -1,69 +1,81 @@
 # Air
 
-**Air is a cloud-native operating system designed for zero-setup work.**
+A minimal, cloud-based operating system with a custom environment and apps.
 
-Air is not a Linux distribution.  
-It is not a desktop environment.  
-It is not a customization playground.
+Air is built on the Linux kernel but hides all traditional Linux interfaces. Users see only Air—a clean, purpose-built experience.
 
-Air is built around one idea:
+## Quick Start
 
-> Your work should follow you. Not your machine.
+```bash
+./scripts/build.sh
+```
 
----
+Note:
+- The build script runs on Linux hosts. On macOS, build via Linux VM/SSH host.
 
-## Why Air Exists
+### ARM64 Runtime (Direct QEMU)
 
-Modern operating systems are:
+Run the built ARM64 disk without UTM:
 
-- Stateful  
-- Drift-prone  
-- Configuration-heavy  
-- Device-centered  
+```bash
+./scripts/run-qemu-arm64.sh
+```
 
-Air is different.
+Notes:
+- The script boots with serial console (`-nographic`) for reliable debugging.
+- The script auto-creates a compatible 64MB UEFI vars file when needed.
 
-Air is:
+### Interface + Version
 
-- Immutable at its core  
-- Identity-first  
-- Workspace-driven  
-- Designed to remove setup and maintenance  
+The default primary interface currently prints:
 
-You don’t configure Air.  
-You sign in.
+`Willkommen`
 
----
+Version metadata remains in:
 
-## Current Status
+`/etc/air/VERSION`
 
-Air is in active development.
+Current value:
 
-- **v0.1 — First Breath**  
-  Air boots.
+`v0.1.1`
 
-- **v0.2 — Immutable Core**  
-  Root becomes read-only.
+Source file in this repo:
 
-Air is not feature-complete.  
-It is being built deliberately.
+`board/air/rootfs-overlay/etc/air/VERSION`
 
----
+## Documentation
 
-## Vision
+- [Vision](docs/vision.md) – What Air will become
+- [Architecture](docs/architecture.md) – How the system is structured
+- [Base Services](docs/base-services.md) – Startup order, logging, healthcheck
+- [Update Format](docs/update-package-format.md) – Local package format (`air-update-1`)
+- [Auto Update](docs/auto-update.md) – Central publish + automatic device staging
+- [Release Policy](docs/release-policy.md) – When and how releases are created
+- [File Versioning](docs/file-versioning.md) – Per-file version tags and bump rules
+- [Journal 2026-02-11](docs/journal/2026-02-11.md) – Detailed feature log for today
+- [Glossary](docs/glossary.md) – Technical terms explained
 
-Air replaces:
+GitHub Releases are the user-facing distribution channel:
+- download a bootable `.img` from Releases
+- start it in QEMU/UTM
+- run `update` inside Air when you want to fetch newer version data
 
-- File-first workflows  
-- Device-bound environments  
-- Manual setup cycles  
+Update-channel publish command:
+`scripts/release-current-to-github.sh --repo mx7mm/air`
 
-With:
+## Project Status
 
-- Context-driven workspaces  
-- Stateless system architecture  
-- Identity-centered computing  
+**Phase 1: Foundation** – Building a minimal bootable system.
 
-Air is not trying to be everything.
+See [CHANGELOG.md](CHANGELOG.md) for progress.
 
-Air is trying to be clear.
+## License
+
+MIT
+
+## For Users
+
+You only need a release image:
+1. Open GitHub Releases.
+2. Download the latest `.img` asset.
+3. Boot with QEMU/UTM.

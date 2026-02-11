@@ -1,24 +1,21 @@
-#!/bin/bash
-# Air Build Script
-# Usage: ./scripts/build.sh
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+info() { echo -e "${GREEN}[INFO]${NC} $*"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
+die() { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 
-# Find Air repo root
 AIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-$HOME/air-build}"
 DEFCONFIG="${AIR_DEFCONFIG:-air_defconfig}"
 BUILDROOT_VERSION="2024.02"
+BUILDROOT_AUTO_SYNC="${BUILDROOT_AUTO_SYNC:-1}"
 
 info "Air Build System"
 info "================"
@@ -26,46 +23,65 @@ info "Air repo: $AIR_ROOT"
 info "Build dir: $BUILD_DIR"
 info "Defconfig: $DEFCONFIG"
 
-# Check dependencies
+[ "$(uname -s)" = "Linux" ] || die "Unsupported host OS: $(uname -s). Run this build on Linux (local VM or SSH host)."
+
 info "Checking dependencies..."
-DEPS="git make gcc g++ wget cpio python3 rsync bc"
-for dep in $DEPS; do
-    if ! command -v $dep &> /dev/null; then
-        error "Missing dependency: $dep"
-    fi
+for dep in git make gcc g++ cpio python3 rsync bc; do
+    command -v "$dep" >/dev/null 2>&1 || die "Missing dependency: $dep"
 done
-info "All dependencies found."
 
-# Create build directory
-mkdir -p "$BUILD_DIR"
-cd "$BUILD_DIR"
-
-# Get Buildroot
-if [ ! -d "buildroot" ]; then
-    info "Downloading Buildroot $BUILDROOT_VERSION..."
-    git clone --depth 1 --branch "$BUILDROOT_VERSION" \
-        https://git.buildroot.net/buildroot buildroot
+if command -v wget >/dev/null 2>&1; then
+    DOWNLOADER="wget"
+elif command -v curl >/dev/null 2>&1; then
+    DOWNLOADER="curl"
 else
-    info "Buildroot already present."
+    die "Missing dependency: wget or curl"
 fi
 
-cd buildroot
+gcc --version 2>/dev/null | head -n 1 | grep -qi 'gcc' || die "GNU gcc is required. Detected a non-GNU 'gcc'."
+info "Using downloader: $DOWNLOADER"
+info "All dependencies found."
 
-# Configure external tree
+mkdir -p "$BUILD_DIR"
+
+if [ ! -d "$BUILD_DIR/buildroot" ]; then
+    info "Downloading Buildroot $BUILDROOT_VERSION..."
+    git clone --depth 1 --branch "$BUILDROOT_VERSION" https://git.buildroot.net/buildroot "$BUILD_DIR/buildroot"
+else
+    info "Buildroot already present."
+    [ -d "$BUILD_DIR/buildroot/.git" ] || die "Existing buildroot directory is not a git repository: $BUILD_DIR/buildroot"
+
+    CURRENT_TAG="$(git -C "$BUILD_DIR/buildroot" describe --tags --exact-match 2>/dev/null || true)"
+    if [ "$CURRENT_TAG" != "$BUILDROOT_VERSION" ]; then
+        warn "Buildroot is not pinned to $BUILDROOT_VERSION (current: ${CURRENT_TAG:-unknown})."
+        [ "$BUILDROOT_AUTO_SYNC" = "1" ] || die "Set BUILDROOT_AUTO_SYNC=1 to auto-sync Buildroot to $BUILDROOT_VERSION."
+        [ -z "$(git -C "$BUILD_DIR/buildroot" status --porcelain)" ] || die "Local changes detected in $BUILD_DIR/buildroot; cannot auto-sync safely."
+
+        info "Syncing Buildroot to $BUILDROOT_VERSION..."
+        git -C "$BUILD_DIR/buildroot" fetch --depth 1 origin tag "$BUILDROOT_VERSION"
+        git -C "$BUILD_DIR/buildroot" checkout --detach -q "tags/$BUILDROOT_VERSION"
+    fi
+fi
+
+cd "$BUILD_DIR/buildroot"
 export BR2_EXTERNAL="$AIR_ROOT"
 
-# Load Air configuration
 info "Loading Air configuration..."
-make "${DEFCONFIG}"
+make "$DEFCONFIG"
 
-# Build
 info "Building Air (this will take a while)..."
 make
 
-# Done
 info "================"
 info "Build complete!"
 info "Output image: $BUILD_DIR/buildroot/output/images/disk.img"
 info ""
-info "To test in QEMU:"
-info "  qemu-system-x86_64 -drive file=output/images/disk.img,format=raw -m 512M"
+if [ "$DEFCONFIG" = "air_arm64_defconfig" ]; then
+    info "To test in QEMU (ARM64/UEFI):"
+    info "  qemu-system-aarch64 -machine virt -cpu cortex-a57 -m 1024 \\"
+    info "    -bios /path/to/QEMU_EFI.fd \\"
+    info "    -drive file=output/images/disk.img,format=raw,if=virtio"
+else
+    info "To test in QEMU (x86_64):"
+    info "  qemu-system-x86_64 -drive file=output/images/disk.img,format=raw -m 512M"
+fi

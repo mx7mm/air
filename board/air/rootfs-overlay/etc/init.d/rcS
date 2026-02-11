@@ -1,32 +1,212 @@
 #!/bin/sh
-# Air Init Script
-# This runs as PID 1
 
-# Mount essential filesystems
-mount -t proc proc /proc
-mount -t sysfs sysfs /sys
-mount -t devtmpfs devtmpfs /dev
-
-# Mount /data partition early
-# Note: We use a custom init script, not BusyBox's standard rcS that auto-runs S* scripts
-# So we explicitly call S01mount-data here for early /data mounting
-if [ -x /etc/init.d/S01mount-data ]; then
-    /etc/init.d/S01mount-data
+if [ -x /usr/bin/air-runtime-flags ]; then
+	. /usr/bin/air-runtime-flags
 fi
 
-# Set hostname
-hostname air
+SERVICE_ORDER_FILE="${AIR_SERVICE_ORDER_FILE:-/etc/air/service-order.conf}"
+DEFAULT_SERVICE_ORDER="mount-core mount-runtime setup-logging mount-data system-identity immutability-check remount-root-ro boot-healthcheck auto-update launch-session"
 
-# Quiet down console output
-if [ -w /proc/sys/kernel/printk ]; then
-	echo 0 > /proc/sys/kernel/printk
-fi
+AIR_LOG_VOLATILE_DIR="${AIR_LOG_VOLATILE_DIR:-/run/log/air}"
+AIR_LOG_PERSISTENT_DIR=""
+AIR_BOOT_LOG=""
+AIR_RUNTIME_LOG=""
+SESSION_RC=0
 
-# Start the session; reboot if it exits
-if [ -x /usr/bin/air-session ]; then
-	/usr/bin/air-session
-else
-	echo "air-session not found"
-fi
+mount_if_needed() {
+	grep -qs " $1 $2 " /proc/mounts || mount -t "$2" "$3" "$1"
+}
 
-/sbin/reboot -f
+mount_tmpfs_if_needed() {
+	grep -qs " $1 tmpfs " /proc/mounts || mount -t tmpfs -o "$2" tmpfs "$1"
+}
+
+mount_data_if_available() {
+	for dev in /dev/vda3 /dev/mmcblk0p3 /dev/sda3; do
+		[ -b "$dev" ] || continue
+		grep -qs " /data " /proc/mounts || mount -t ext4 -o rw,noatime "$dev" /data
+		return 0
+	done
+	return 1
+}
+
+remount_root_readonly() {
+	mount -o remount,ro / 2>/dev/null || true
+}
+
+timestamp() {
+	date '+%Y-%m-%dT%H:%M:%S%z'
+}
+
+is_silent_boot() {
+	[ "${AIR_SILENT_BOOT:-1}" = "1" ]
+}
+
+log_boot() {
+	line="$(timestamp) [rcS] $*"
+	if ! is_silent_boot; then
+		echo "$line"
+	fi
+	if [ -n "$AIR_BOOT_LOG" ]; then
+		printf '%s\n' "$line" >> "$AIR_BOOT_LOG"
+	fi
+	if [ -n "$AIR_LOG_PERSISTENT_DIR" ] && [ -d "$AIR_LOG_PERSISTENT_DIR" ]; then
+		printf '%s\n' "$line" >> "$AIR_LOG_PERSISTENT_DIR/boot.log"
+	fi
+}
+
+enable_persistent_logs() {
+	grep -qs " /data " /proc/mounts || return 1
+	[ -d /data ] || return 1
+	AIR_LOG_PERSISTENT_DIR="/data/log/air"
+	mkdir -p "$AIR_LOG_PERSISTENT_DIR"
+	export AIR_LOG_PERSISTENT_DIR
+	return 0
+}
+
+service_mount_core() {
+	mount_if_needed /proc proc proc
+	if is_silent_boot && [ -w /proc/sys/kernel/printk ]; then
+		echo 0 > /proc/sys/kernel/printk
+	fi
+	mount_if_needed /sys sysfs sysfs
+	mount_if_needed /dev devtmpfs devtmpfs
+	[ -d /dev/pts ] || mkdir -p /dev/pts
+	mount_if_needed /dev/pts devpts devpts
+}
+
+service_mount_runtime() {
+	mount_tmpfs_if_needed /run "mode=0755,nosuid,nodev"
+	mount_tmpfs_if_needed /tmp "mode=1777,nosuid,nodev"
+}
+
+service_mount_data() {
+	[ -d /data ] || return 0
+	if mount_data_if_available; then
+		enable_persistent_logs || true
+		return 0
+	fi
+	log_boot "/data partition not found; continuing without persistent data"
+	return 0
+}
+
+service_system_identity() {
+	hostname air
+	[ -w /proc/sys/kernel/printk ] && echo 0 > /proc/sys/kernel/printk
+}
+
+service_setup_logging() {
+	[ -d /run ] || return 1
+	mkdir -p "$AIR_LOG_VOLATILE_DIR"
+	AIR_BOOT_LOG="$AIR_LOG_VOLATILE_DIR/boot.log"
+	AIR_RUNTIME_LOG="$AIR_LOG_VOLATILE_DIR/runtime.log"
+	: > "$AIR_BOOT_LOG"
+	: > "$AIR_RUNTIME_LOG"
+	enable_persistent_logs || true
+	export AIR_LOG_VOLATILE_DIR AIR_BOOT_LOG AIR_RUNTIME_LOG AIR_LOG_PERSISTENT_DIR
+	log_boot "volatile logging enabled at $AIR_LOG_VOLATILE_DIR"
+	if [ -n "$AIR_LOG_PERSISTENT_DIR" ]; then
+		log_boot "persistent logging enabled at $AIR_LOG_PERSISTENT_DIR"
+	else
+		log_boot "persistent logging disabled (no /data mount)"
+	fi
+}
+
+service_immutability_check() {
+	if [ "${AIR_IMMUTABILITY_CHECK:-0}" = "1" ] && [ -x /usr/bin/air-immutable-smoke ]; then
+		/usr/bin/air-immutable-smoke
+	fi
+	return 0
+}
+
+service_remount_root_ro() {
+	remount_root_readonly
+	return 0
+}
+
+service_boot_healthcheck() {
+	if [ "${AIR_HEALTHCHECK_ON_BOOT:-1}" = "1" ] && [ -x /usr/bin/air-healthcheck ]; then
+		/usr/bin/air-healthcheck --mode=boot
+	fi
+	return 0
+}
+
+service_auto_update() {
+	if [ "${AIR_AUTO_UPDATE:-1}" = "1" ] && [ -x /usr/bin/air-auto-update ]; then
+		/usr/bin/air-auto-update run || true
+	fi
+	return 0
+}
+
+service_launch_session() {
+	SESSION_RC=0
+	if [ -x /usr/bin/air-session ]; then
+		/usr/bin/air-session || SESSION_RC=$?
+	else
+		echo "air-session not found"
+		SESSION_RC=127
+	fi
+
+	if [ "${AIR_DEBUG:-0}" = "1" ]; then
+		exec /bin/sh
+	fi
+
+	if [ "${AIR_REBOOT_ON_EXIT:-0}" = "1" ]; then
+		/sbin/reboot -f
+	fi
+
+	log_boot "air-session exited with rc=${SESSION_RC}; keeping system alive"
+	while :; do
+		sleep 3600
+	done
+}
+
+run_step() {
+	step="$1"
+	case "$step" in
+		mount-core) service_mount_core ;;
+		mount-runtime) service_mount_runtime ;;
+		mount-data) service_mount_data ;;
+		system-identity) service_system_identity ;;
+		setup-logging) service_setup_logging ;;
+		immutability-check) service_immutability_check ;;
+		remount-root-ro) service_remount_root_ro ;;
+		boot-healthcheck) service_boot_healthcheck ;;
+		auto-update) service_auto_update ;;
+		launch-session) service_launch_session ;;
+		*)
+			log_boot "unknown startup step '$step'"
+			return 1
+			;;
+	esac
+	return $?
+}
+
+load_service_order() {
+	SERVICE_ORDER=""
+	if [ -r "$SERVICE_ORDER_FILE" ]; then
+		while IFS= read -r line || [ -n "$line" ]; do
+			case "$line" in
+				""|\#*) continue ;;
+			esac
+			SERVICE_ORDER="$SERVICE_ORDER $line"
+		done < "$SERVICE_ORDER_FILE"
+	fi
+	[ -n "$SERVICE_ORDER" ] || SERVICE_ORDER="$DEFAULT_SERVICE_ORDER"
+}
+
+load_service_order
+
+for step in $SERVICE_ORDER; do
+	log_boot "step:start $step"
+	if run_step "$step"; then
+		log_boot "step:ok $step"
+	else
+		log_boot "step:fail $step"
+	fi
+done
+
+log_boot "no session step configured; entering idle loop"
+while :; do
+	sleep 3600
+done
