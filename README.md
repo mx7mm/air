@@ -55,8 +55,12 @@ Source file in this repo:
 - [Journal 2026-02-11](docs/journal/2026-02-11.md) – Detailed feature log for today
 - [Glossary](docs/glossary.md) – Technical terms explained
 
-GitHub Releases can be used as the central update source (`latest.json` channel + versioned package assets).
-Quick publish command:
+GitHub Releases are the user-facing distribution channel:
+- download a bootable `.img` from Releases
+- start it in QEMU/UTM
+- run `update` inside Air when you want to fetch newer version data
+
+Update-channel publish command:
 `scripts/release-current-to-github.sh --repo mx7mm/air`
 
 ## Project Status
@@ -69,8 +73,9 @@ See [CHANGELOG.md](CHANGELOG.md) for progress.
 
 MIT
 
-## Repo Layout (Simplified)
+## For Users
 
-- `air.img` (root): visible image entry file.
-- `README.md` (root): quick info.
-- `sammelordner/`: all other project files.
+You only need a release image:
+1. Open GitHub Releases.
+2. Download the latest `.img` asset.
+3. Boot with QEMU/UTM.

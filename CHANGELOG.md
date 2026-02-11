@@ -17,6 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - File versioning policy docs (`docs/file-versioning.md`)
 - CI enforcement script for file version bumps (`.github/scripts/check-file-versions.sh`)
 - Automatic release workflow on version changes (`.github/workflows/release-on-version-change.yml`)
+- Tag-based workflow to publish bootable arm64 `.img` assets (`.github/workflows/release-image-on-tag.yml`)
 
 ### Fixed
 
@@ -30,6 +31,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Release policy now documents automatic publish on version updates
 - Auto update install is now manual by default (`AIR_AUTO_UPDATE=0`)
 - OS interface now supports `update` and `status` commands for on-demand download/apply
+- Repository layout restored to standard root structure (no `sammelordner/` indirection)
 
 ---
 
