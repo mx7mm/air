@@ -11,6 +11,7 @@ Air runtime behavior is controlled by a centralized config file:
 - `AIR_IMMUTABILITY_CHECK` (`0|1`)
 - `AIR_IMMUTABILITY_STRICT` (`0|1`)
 - `AIR_HEALTHCHECK_ON_BOOT` (`0|1`)
+- `AIR_SILENT_BOOT` (`0|1`)
 - `AIR_VERSION_FILE` (path)
 
 ## Load Order
@@ -35,5 +36,6 @@ Used by:
 
 - `rcS` init script
 - `air-session`
+- `air-primary-interface`
 - `air-kiosk`
 - `air-immutable-smoke`

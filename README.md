@@ -25,9 +25,13 @@ Notes:
 - The script boots with serial console (`-nographic`) for reliable debugging.
 - The script auto-creates a compatible 64MB UEFI vars file when needed.
 
-### Dummy AI Version
+### Interface + Version
 
-The kiosk reads its displayed version from:
+The default primary interface currently prints:
+
+`Willkommen`
+
+Version metadata remains in:
 
 `/etc/air/VERSION`
 

@@ -18,7 +18,7 @@ Current sequence:
 6. `immutability-check` (optional smoke check)
 7. `remount-root-ro` (runtime root remount read-only)
 8. `boot-healthcheck` (optional summary check)
-9. `launch-session` (`air-session` -> `air-kiosk`)
+9. `launch-session` (`air-session` -> `air-primary-interface`)
 
 This keeps boot behavior deterministic while still allowing debug/runtime flags.
 
@@ -32,6 +32,8 @@ No runtime logs are written into immutable root.
 - Persistent log mirror (when `/data` is mounted): `/data/log/air`
 
 Runtime components (`rcS`, `air-session`, `air-kiosk`, `air-healthcheck`) write only to `/run` and optional `/data`.
+
+`AIR_SILENT_BOOT=1` (default) suppresses visible init log output on the primary console while still writing logs to `/run/log/air` (and optional `/data/log/air`).
 
 ## Healthcheck
 

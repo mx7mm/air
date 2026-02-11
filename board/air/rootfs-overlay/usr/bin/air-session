@@ -1,5 +1,5 @@
 #!/bin/sh
-# Air session launcher (kiosk-first).
+# Air session launcher (primary-interface first).
 
 if [ -x /usr/bin/air-runtime-flags ]; then
 	. /usr/bin/air-runtime-flags
@@ -7,7 +7,6 @@ fi
 
 log_runtime() {
 	line="$(date '+%Y-%m-%dT%H:%M:%S%z') [air-session] $*"
-	echo "$line"
 	if [ -n "${AIR_RUNTIME_LOG:-}" ]; then
 		printf '%s\n' "$line" >> "$AIR_RUNTIME_LOG"
 	fi
@@ -16,8 +15,13 @@ log_runtime() {
 	fi
 }
 
+if [ -x /usr/bin/air-primary-interface ]; then
+	log_runtime "launching air-primary-interface"
+	exec /usr/bin/air-primary-interface
+fi
+
 if [ -x /usr/bin/air-kiosk ]; then
-	log_runtime "launching air-kiosk"
+	log_runtime "launching fallback air-kiosk"
 	exec /usr/bin/air-kiosk
 fi
 
@@ -27,5 +31,5 @@ if [ "${AIR_DEBUG:-0}" = "1" ]; then
 	exec /bin/sh
 fi
 
-log_runtime "air-kiosk not found; idle mode"
+log_runtime "no interface found; idle mode"
 exit 0

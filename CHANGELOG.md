@@ -30,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Deterministic init service order config (`/etc/air/service-order.conf`)
 - Boot/runtime healthcheck command (`air-healthcheck`)
 - Base services reference doc (`docs/base-services.md`)
+- Minimal primary interface entrypoint (`air-primary-interface`)
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
@@ -49,6 +50,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Runtime flag behavior is now documented (`docs/runtime-flags.md`)
 - Init now follows explicit step-based startup order with service names
 - Runtime logging paths now use `/run/log/air` (+ optional `/data/log/air` mirror) only
+- Added runtime flag `AIR_SILENT_BOOT` (default enabled) to hide visible init logs on console
+- Session now launches a minimal primary interface that shows only `Willkommen`
+- ARM64 GRUB kernel args now use `quiet loglevel=0` for silent startup behavior
 
 ---
 
