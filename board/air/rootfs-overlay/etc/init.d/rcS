@@ -4,13 +4,32 @@ mount_if_needed() {
 	grep -qs " $1 $2 " /proc/mounts || mount -t "$2" "$3" "$1"
 }
 
+mount_tmpfs_if_needed() {
+	grep -qs " $1 tmpfs " /proc/mounts || mount -t tmpfs -o "$2" tmpfs "$1"
+}
+
+mount_data_if_available() {
+	for dev in /dev/vda3 /dev/mmcblk0p3 /dev/sda3; do
+		[ -b "$dev" ] || continue
+		grep -qs " /data " /proc/mounts || mount -t ext4 -o rw,noatime "$dev" /data
+		return 0
+	done
+	return 1
+}
+
 mount_if_needed /proc proc proc
 mount_if_needed /sys sysfs sysfs
 mount_if_needed /dev devtmpfs devtmpfs
+mount_if_needed /dev/pts devpts devpts
+mount_tmpfs_if_needed /run "mode=0755,nosuid,nodev"
+mount_tmpfs_if_needed /tmp "mode=1777,nosuid,nodev"
+[ -d /data ] && mount_data_if_available || true
 
 hostname air
 
 [ -w /proc/sys/kernel/printk ] && echo 0 > /proc/sys/kernel/printk
+
+[ "${AIR_IMMUTABILITY_CHECK:-0}" = "1" ] && [ -x /usr/bin/air-immutable-smoke ] && /usr/bin/air-immutable-smoke || true
 
 SESSION_RC=0
 if [ -x /usr/bin/air-session ]; then

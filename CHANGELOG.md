@@ -20,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Central dummy AI version file at `/etc/air/VERSION`
 - Direct ARM64 run script: `scripts/run-qemu-arm64.sh`
 - ARM64 kernel image artifact: `Image-arm64`
+- Optional init smoke check: `air-immutable-smoke` (`AIR_IMMUTABILITY_CHECK=1`)
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
@@ -33,6 +34,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Build time optimized from 60min →15-20min
 - `air-kiosk` startup output now shows version + latest features only
 - Dummy AI version source is centralized in `/etc/air/VERSION` (current `v0.1.0`)
+- Init boot flow now mounts `/run` and `/tmp` as tmpfs and mounts `/data` when available
 
 ---
 
