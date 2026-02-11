@@ -53,6 +53,18 @@ If `latest.json` becomes visible to devices (mounted/synced/served), devices sta
 
 GitHub Releases can be used as the central distribution point.
 
+One-command release (current local version):
+
+```bash
+scripts/release-current-to-github.sh --repo mx7mm/air
+```
+
+If you want the next patch version automatically:
+
+```bash
+scripts/release-current-to-github.sh --repo mx7mm/air --next-patch
+```
+
 Publish package + channel manifest:
 
 ```bash

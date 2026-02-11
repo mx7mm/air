@@ -53,6 +53,8 @@ Source file in this repo:
 - [Glossary](docs/glossary.md) – Technical terms explained
 
 GitHub Releases can be used as the central update source (`latest.json` channel + versioned package assets).
+Quick publish command:
+`scripts/release-current-to-github.sh --repo mx7mm/air`
 
 ## Project Status
 

@@ -37,6 +37,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Boot-time auto update command (`air-auto-update`) with version check + auto staging
 - Channel publish helper (`scripts/publish-update-channel.sh`)
 - GitHub Releases publish helper (`scripts/publish-update-github.sh`)
+- One-command GitHub release helper (`scripts/release-current-to-github.sh`)
 - Auto-update flow documentation (`docs/auto-update.md`)
 
 ### Fixed
