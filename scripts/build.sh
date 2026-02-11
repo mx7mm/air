@@ -17,12 +17,14 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # Find Air repo root
 AIR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${BUILD_DIR:-$HOME/air-build}"
+DEFCONFIG="${AIR_DEFCONFIG:-air_defconfig}"
 BUILDROOT_VERSION="2024.02"
 
 info "Air Build System"
 info "================"
 info "Air repo: $AIR_ROOT"
 info "Build dir: $BUILD_DIR"
+info "Defconfig: $DEFCONFIG"
 
 # Check dependencies
 info "Checking dependencies..."
@@ -54,7 +56,7 @@ export BR2_EXTERNAL="$AIR_ROOT"
 
 # Load Air configuration
 info "Loading Air configuration..."
-make air_defconfig
+make "${DEFCONFIG}"
 
 # Build
 info "Building Air (this will take a while)..."

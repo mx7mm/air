@@ -7,6 +7,11 @@
 set -e
 
 BOARD_DIR="$(dirname $0)"
+BR_CONFIG=""
+GRUB_PLATFORM="x86_64-efi"
+GRUB_MODULES_SUFFIX="x86_64-efi"
+EFI_BOOT_FILE="bootx64.efi"
+GRUB_CFG="${BOARD_DIR}/grub.cfg"
 
 # Parse arguments - find genimage config
 GENIMAGE_CFG=""
@@ -20,6 +25,27 @@ if [ -z "$GENIMAGE_CFG" ]; then
     GENIMAGE_CFG="${BOARD_DIR}/genimage.cfg"
 fi
 
+BR_CONFIG="${BINARIES_DIR}/../.config"
+if [ ! -f "$BR_CONFIG" ]; then
+    echo "ERROR: Buildroot config not found at $BR_CONFIG"
+    exit 1
+fi
+
+if grep -q '^BR2_aarch64=y' "$BR_CONFIG"; then
+    GRUB_PLATFORM="arm64-efi"
+    GRUB_MODULES_SUFFIX="arm64-efi"
+    EFI_BOOT_FILE="bootaa64.efi"
+    GRUB_CFG="${BOARD_DIR}/grub-arm64.cfg"
+elif grep -q '^BR2_x86_64=y' "$BR_CONFIG"; then
+    GRUB_PLATFORM="x86_64-efi"
+    GRUB_MODULES_SUFFIX="x86_64-efi"
+    EFI_BOOT_FILE="bootx64.efi"
+    GRUB_CFG="${BOARD_DIR}/grub.cfg"
+else
+    echo "ERROR: Unsupported architecture in $BR_CONFIG"
+    exit 1
+fi
+
 echo "=== Air Post-Image Script ==="
 echo "BINARIES_DIR: ${BINARIES_DIR}"
 echo "TARGET_DIR: ${TARGET_DIR}"
@@ -29,8 +55,8 @@ echo "HOST_DIR: ${HOST_DIR}"
 mkdir -p "${BINARIES_DIR}/EFI/BOOT"
 
 # Ensure UEFI shell can auto-boot if it drops to shell
-cat > "${BINARIES_DIR}/startup.nsh" <<'EOF'
-\EFI\BOOT\bootx64.efi
+cat > "${BINARIES_DIR}/startup.nsh" <<EOF
+\EFI\BOOT\${EFI_BOOT_FILE}
 EOF
 
 # Check if GRUB tools and modules exist
@@ -41,11 +67,11 @@ if [ ! -x "$GRUB_MKIMAGE" ]; then
 fi
 
 OUTPUT_DIR="$(dirname "$BINARIES_DIR")"
-GRUB_MODULES_DIR_HOST="${HOST_DIR}/lib/grub/x86_64-efi"
-GRUB_MODULES_DIR_TARGET="${TARGET_DIR}/usr/lib/grub/x86_64-efi"
+GRUB_MODULES_DIR_HOST="${HOST_DIR}/lib/grub/${GRUB_MODULES_SUFFIX}"
+GRUB_MODULES_DIR_TARGET="${TARGET_DIR}/usr/lib/grub/${GRUB_MODULES_SUFFIX}"
 GRUB_MODULES_DIR_BUILD=""
 for candidate in \
-    "$OUTPUT_DIR"/build/grub2-*/build-x86_64-efi/grub-core \
+    "$OUTPUT_DIR"/build/grub2-*/build-${GRUB_MODULES_SUFFIX}/grub-core \
     "$OUTPUT_DIR"/build/grub2-*/grub-core; do
     if [ -d "$candidate" ]; then
         GRUB_MODULES_DIR_BUILD="$candidate"
@@ -72,8 +98,8 @@ echo "Creating GRUB EFI binary..."
 
 # Create GRUB EFI binary using grub-mkimage
 "$GRUB_MKIMAGE" \
-    -O x86_64-efi \
-    -o "${BINARIES_DIR}/EFI/BOOT/bootx64.efi" \
+    -O "${GRUB_PLATFORM}" \
+    -o "${BINARIES_DIR}/EFI/BOOT/${EFI_BOOT_FILE}" \
     -p /EFI/BOOT \
     -d "${GRUB_MODULES_DIR}" \
     boot linux ext2 fat part_gpt part_msdos normal efi_gop
@@ -81,7 +107,7 @@ echo "Creating GRUB EFI binary..."
 echo "GRUB EFI binary created."
 
 # Copy GRUB config
-cp "${BOARD_DIR}/grub.cfg" "${BINARIES_DIR}/EFI/BOOT/grub.cfg"
+cp "${GRUB_CFG}" "${BINARIES_DIR}/EFI/BOOT/grub.cfg"
 
 echo "EFI files prepared in ${BINARIES_DIR}/EFI/BOOT/"
 ls -la "${BINARIES_DIR}/EFI/BOOT/"
