@@ -4,7 +4,7 @@ output/
 build/
 *.img
 *.iso
+*.DS_Store
 
 # Editor
 .vscode/
-.DS_Store
