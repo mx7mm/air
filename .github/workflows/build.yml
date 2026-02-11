@@ -4,7 +4,17 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build Air OS
+    name: Build Air OS (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64
+            defconfig: air_defconfig
+            artifact_name: air-disk-image-x86_64
+          - target: arm64
+            defconfig: air_arm64_defconfig
+            artifact_name: air-disk-image-arm64
 
     steps:
       - name: Checkout
@@ -17,6 +27,8 @@ jobs:
 
       - name: Build Air
         run: ./scripts/build.sh
+        env:
+          AIR_DEFCONFIG: ${{ matrix.defconfig }}
         timeout-minutes: 30
 
       - name: Check Output
@@ -30,8 +42,8 @@ jobs:
 
       - name: Upload Artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: air-disk-image
+          name: ${{ matrix.artifact_name }}
           path: ~/air-build/buildroot/output/images/disk.img
           retention-days: 7
