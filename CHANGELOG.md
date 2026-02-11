@@ -19,6 +19,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Pull request template
 - GitHub Actions CI/CD workflow for automated builds
 - Professional documentation for collaborators
+- Read-only root filesystem support via `ro` kernel parameter
+- air-verify-readonly script for validating immutable root configuration
 
 ### Fixed
 - Downgrade kernel to Linux 6.1 (more stable for compilation)
@@ -32,6 +34,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Simplified kernel configuration for faster builds
 - Updated architecture docs to show phased approach
 - Build time optimized from 60min →15-20min
+- Adapted init process for immutability - root filesystem now mounted read-only
+- Init scripts no longer write to root filesystem during boot
+- Temporary files relocated to /data partition or tmpfs mounts
 
 ---
 
